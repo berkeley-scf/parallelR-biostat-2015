@@ -1,0 +1,2069 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+\usepackage{/accounts/gen/vis/paciorek/latex/paciorek-asa,times,graphics}
+\input{/accounts/gen/vis/paciorek/latex/paciorekMacros}
+%\renewcommand{\baselinestretch}{1.5}
+\usepackage[unicode=true]{hyperref}
+\hypersetup{unicode=true, pdfusetitle,
+bookmarks=true,bookmarksnumbered=false,bookmarksopen=false,
+ breaklinks=false,pdfborder={0 0 1},backref=false,colorlinks=true,}
+\end_preamble
+\use_default_options false
+\begin_modules
+knitr
+\end_modules
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 12
+\spacing onehalf
+\use_hyperref false
+\papersize letterpaper
+\use_geometry true
+\use_amsmath 1
+\use_esint 0
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+An Introduction to Parallel Processing in R, 
+\begin_inset Newline newline
+\end_inset
+
+Including Use on Clusters and in the Cloud
+\end_layout
+
+\begin_layout Author
+Chris Paciorek
+\begin_inset Newline newline
+\end_inset
+
+Department of Statistics
+\begin_inset Newline newline
+\end_inset
+
+University of California, Berkeley
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+<<setup, include=FALSE, cache=FALSE>>=
+\end_layout
+
+\begin_layout Plain Layout
+
+options(replace.assign=TRUE, width=55)
+\end_layout
+
+\begin_layout Plain Layout
+
+@
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Chunk
+
+<<read-chunk, echo=FALSE>>= 
+\end_layout
+
+\begin_layout Chunk
+
+read_chunk('parallel.R') 
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Section
+How to follow and try out this material
+\end_layout
+
+\begin_layout Standard
+Note that my examples here will be silly toy examples for the purpose of
+ keeping things simple and focused on the parallelization approaches.
+\end_layout
+
+\begin_layout Standard
+I will do demos on an Ubuntu Linux virtual machine (VM), on the biostat
+ cluster, and on Amazon's AWS.
+ 
+\end_layout
+
+\begin_layout Standard
+We'll use the 
+\begin_inset CommandInset href
+LatexCommand href
+name "BCE Virtual Machine"
+target "bce.berkeley.edu"
+
+\end_inset
+
+.
+ You can run this on your laptop (see 
+\begin_inset CommandInset href
+LatexCommand href
+name "BCE Virtual Machine"
+target "bce.berkeley.edu/install.html"
+
+\end_inset
+
+ for installation instructions), and I encourage you to do so to follow
+ along.
+ Note: to allow for parallelization, before starting the BCE VM, go to Machine
+ > Settings, select System and increase the number of processors.
+\end_layout
+
+\begin_layout Standard
+We'll also use BCE as the basis for the virtual machines we start on Amazon's
+ AWS.
+ 
+\end_layout
+
+\begin_layout Section
+Overview of parallel processing computers
+\end_layout
+
+\begin_layout Standard
+There are two basic flavors of parallel processing (leaving aside GPUs):
+ distributed memory and shared memory.
+ With shared memory, multiple processors (which I'll call cores) share the
+ same memory.
+ With distributed memory, you have multiple nodes, each with their own memory.
+ You can think of each node as a separate computer connected by a fast network.
+ 
+\end_layout
+
+\begin_layout Subsection
+Some useful terminology:
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+cores
+\emph default
+: We'll use this term to mean the different processing units available on
+ a single node.
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+nodes
+\emph default
+: We'll use this term to mean the different computers, each with their own
+ distinct memory, that make up a cluster or supercomputer.
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+processes
+\emph default
+: computational tasks executing on a machine.
+ A given program may start up multiple processes at once.
+ Ideally we have no more processes than cores on a node.
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+thread
+\emph default
+s: multiple paths of execution within a single process; the OS sees the
+ threads as a single process, but one can think of them as 'lightweight'
+ processes.
+ Ideally when considering the processes and their threads, we would have
+ no more processes and threads combined than cores on a node.
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+forking
+\emph default
+: child processes are spawned that are identical to the parent, but with
+ different process id's and their own memory.
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+sockets
+\emph default
+: some of R's parallel functionality involves creating new R processes (e.g.,
+ starting processes via 
+\emph on
+Rscript
+\emph default
+) and communicating with them via a communication technology called sockets.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+[see George's pdf for graphical representation, p.
+ 23]
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Shared memory
+\end_layout
+
+\begin_layout Standard
+For shared memory parallelism, each core is accessing the same memory so
+ there is no need to pass information (in the form of messages) between
+ different machines.
+ But in some programming contexts one needs to be careful that activity
+ on different cores doesn't mistakenly overwrite places in memory that are
+ used by other cores.
+\end_layout
+
+\begin_layout Standard
+Some of the shared memory parallelism approaches that we'll cover are:
+\end_layout
+
+\begin_layout Enumerate
+threaded linear algebra 
+\end_layout
+
+\begin_layout Enumerate
+simple parallelization of embarrassingly parallel computations
+\end_layout
+
+\begin_layout Paragraph*
+Threading
+\end_layout
+
+\begin_layout Standard
+Threads are multiple paths of execution within a single process.
+ Using 
+\emph on
+top
+\emph default
+ to monitor a job that is executing threaded code, you'll see the process
+ using more than 100% of CPU.
+ When this occurs, the process is using multiple cores, although it appears
+ as a single process rather than as multiple processes.
+ In general, threaded code will detect the number of cores available on
+ a machine and make use of them.
+ However, you can also explicitly control the number of threads available
+ to a process.
+ 
+\end_layout
+
+\begin_layout Standard
+For most threaded code (that based on the openMP protocol), the number of
+ threads can be set by setting the OMP_NUM_THREADS environment variable
+ (VECLIB_MAXIMUM THREADS on a Mac).
+ E.g., to set it for four threads in bash:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+export OMP_NUM_THREADS=4
+\end_layout
+
+\begin_layout Standard
+Matlab is an exception to this.
+ Threading in Matlab can be controlled in two ways.
+ From within your Matlab code you can set the number of threads, e.g., to
+ four in this case:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+feature('numThreads', 4)
+\end_layout
+
+\begin_layout Standard
+To use only a single thread, you can use 1 instead of 4 above, or you can
+ start Matlab with the 
+\emph on
+singleCompThread
+\emph default
+ flag:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+matlab -singleCompThread ...
+\end_layout
+
+\begin_layout Subsection
+Distributed memory
+\end_layout
+
+\begin_layout Standard
+Parallel programming for distributed memory parallelism requires passing
+ messages between the different nodes.
+ The standard protocol for doing this is MPI, of which there are various
+ versions, including 
+\emph on
+openMPI
+\emph default
+.
+ The Python package 
+\emph on
+mpi4py
+\emph default
+ implements MPI in Python and the R package 
+\emph on
+Rmpi
+\emph default
+ implements MPI in R.
+ 
+\end_layout
+
+\begin_layout Standard
+Some of the distributed memory approaches that we'll cover are:
+\end_layout
+
+\begin_layout Enumerate
+simple parallelization of embarrassingly parallel computations
+\end_layout
+
+\begin_layout Enumerate
+using MPI for explicit distributed memory processing
+\end_layout
+
+\begin_layout Subsection
+Other type of parallel processing
+\end_layout
+
+\begin_layout Standard
+We won't cover either of the following in this material.
+\end_layout
+
+\begin_layout Subsubsection
+GPUs
+\end_layout
+
+\begin_layout Standard
+GPUs (Graphics Processing Units) are processing units originally designed
+ for rendering graphics on a computer quickly.
+ This is done by having a large number of simple processing units for massively
+ parallel calculation.
+ The idea of general purpose GPU (GPGPU) computing is to exploit this capability
+ for general computation.
+ 
+\end_layout
+
+\begin_layout Standard
+In spring 2014, I gave a 
+\begin_inset CommandInset href
+LatexCommand href
+name "workshop on using GPUs"
+target "http://statistics.berkeley.edu/computing/gpu"
+
+\end_inset
+
+.
+ One easy way to use a GPU is on an Amazon EC2 virtual machine.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Spark and Hadoop
+\end_layout
+
+\begin_layout Standard
+Spark and Hadoop are systems for implementing computations in a distributed
+ memory environment, using the MapReduce approach.
+ In fall 2014 I gave a 
+\begin_inset CommandInset href
+LatexCommand href
+name "workshop on Spark"
+target "http://statistics.berkeley.edu/computing/spark"
+
+\end_inset
+
+.
+ One easy way to use Spark is on a cluster of Amazon EC2 virtual machines.
+ 
+\end_layout
+
+\begin_layout Section
+Basic suggestions for parallelizing your code
+\end_layout
+
+\begin_layout Standard
+The easiest situation is when your code is embarrassingly parallel, which
+ means that the different tasks can be done independently and the results
+ collected.
+ When the tasks need to interact, things get much harder.
+ Much of the material here is focused on embarrassingly parallel computation.
+\end_layout
+
+\begin_layout Itemize
+If you have nested loops, you generally only want to parallelize at one
+ level of the code.
+ That said, there may be cases in which it is helpful to do both.
+ Keep in mind whether your linear algebra is being threaded.
+ Often you will want to parallelize over a loop and not use threaded linear
+ algebra.
+ (That said, if you have multiple nodes, you might have one task per node
+ and use threaded linear algebra to exploit the cores on each node.)
+\end_layout
+
+\begin_layout Itemize
+Often it makes sense to parallelize the outer loop when you have nested
+ loops.
+\end_layout
+
+\begin_layout Itemize
+You generally want to parallelize in such a way that your code is load-balanced
+ and does not involve too much communication.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+If you have very few tasks, particularly if the tasks take different amounts
+ of time, often some processors will be idle and your code poorly load-balanced.
+\end_layout
+
+\begin_layout Itemize
+If you have very many tasks and each one takes little time, the communication
+ overhead of starting and stopping the tasks will reduce efficiency.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+I'm happy to help discuss specific circumstances, so just email consult@stat.berk
+eley.edu.
+\end_layout
+
+\begin_layout Section
+Threaded linear algebra and the BLAS 
+\end_layout
+
+\begin_layout Standard
+The BLAS is the library of basic linear algebra operations (written in Fortran
+ or C).
+ A fast BLAS can greatly speed up linear algebra relative to the default
+ BLAS on a machine.
+ Some fast BLAS libraries are Intel's 
+\emph on
+MKL
+\emph default
+, AMD's 
+\emph on
+ACML
+\emph default
+, and the open source (and free) 
+\emph on
+openBLAS
+\emph default
+ (formerly 
+\emph on
+GotoBLAS
+\emph default
+).
+ For the Mac, there is 
+\emph on
+vecLib
+\emph default
+ BLAS.
+ All of these BLAS libraries are now threaded - if your computer has multiple
+ cores and there are free resources, your linear algebra will use multiple
+ cores, provided your program is linked against the specific BLAS and provided
+ OMP_NUM_THREADS is not set to one.
+ (Macs make use of VECLIB_MAXIMUM_THREADS rather than OMP_NUM_THREADS.)
+\end_layout
+
+\begin_layout Subsection
+Fixing the number of threads (cores used)
+\end_layout
+
+\begin_layout Standard
+In general, if you want to limit the number of threads used, you can set
+ the OMP_NUM_THREADS environment variable on UNIX machine.
+ This can be used in the context of R or C code that uses BLAS or your own
+ threaded C code, but this does not work with Matlab.
+ In the UNIX shell, you'd do this as follows (e.g.
+ to limit to 3 cores):
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+export OMP_NUM_THREADS=3 # bash
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+setenv OMP_NUM_THREADS 3 # tcsh
+\end_layout
+
+\begin_layout Standard
+If you are running R, you'd need to do this in your shell session before
+ invoking R.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+warning off MATLAB:maxNumCompThreads:Deprecated 
+\end_layout
+
+\begin_layout Plain Layout
+nslots = getenv('NSLOTS') 
+\end_layout
+
+\begin_layout Plain Layout
+maxNumCompThreads(nslots); 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Using threading in R
+\end_layout
+
+\begin_layout Standard
+Threading in R is limited to linear algebra, for which R calls external
+ BLAS and LAPACK libraries.
+\end_layout
+
+\begin_layout Standard
+Here's some code that when run in an R executable linked to a threaded BLAS
+ illustrates the speed of using a threaded BLAS:
+\end_layout
+
+\begin_layout Chunk
+
+<<RlinAlg, cache=TRUE, eval=TRUE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+The R installation manual gives information on how to link R to a fast BLAS.
+ On Ubuntu, if you install openBLAS as follows, the 
+\emph on
+/etc/alternatives
+\emph default
+ system will set 
+\emph on
+/usr/lib/libblas.so
+\emph default
+ to point to openBLAS.
+ By default on Ubuntu, R will use the system BLAS, so it will as a result
+ use openBLAS.
+ 
+\end_layout
+
+\begin_layout Chunk
+
+<<etc-alternatives, eval=FALSE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+To use a fast, threaded BLAS enabled on your own Mac, do the following:
+\end_layout
+
+\begin_layout Chunk
+
+<<MacBLAS, eval=FALSE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+this tests fine on Arwen and as SGE job on cluster
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Important warnings about use of threaded BLAS
+\end_layout
+
+\begin_layout Paragraph
+Conflict between openBLAS and some parallel functionality in R
+\end_layout
+
+\begin_layout Standard
+There are conflicts between forking in R and threaded BLAS that in some
+ cases affect 
+\emph on
+foreach
+\emph default
+ (when using the 
+\emph on
+multicore
+\emph default
+ and 
+\emph on
+parallel
+\emph default
+ backends), 
+\emph on
+mclapply()
+\emph default
+, and (only if 
+\emph on
+cluster()
+\emph default
+ is set up with forking (not the default)) 
+\emph on
+par{L,S,}apply()
+\emph default
+.
+ The result is that if linear algebra is used within your parallel code,
+ R hangs.
+ This affects (under somewhat different circumstances) both ACML and openBLAS.
+\end_layout
+
+\begin_layout Standard
+To address this, before running an R job that does linear algebra, you can
+ set OMP_NUM_THREADS to 1 to prevent the BLAS from doing threaded calculations.
+ Alternatively, you can use MPI as the parallel backend (via 
+\emph on
+doMPI
+\emph default
+ in place of 
+\emph on
+doMC
+\emph default
+ or 
+\emph on
+doParallel
+\emph default
+ -- see Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Distributed-memory"
+
+\end_inset
+
+).
+ You may also be able to convert your code to use 
+\emph on
+par{L,S,}apply() 
+\emph default
+[with the default PSOCK type] and avoid 
+\emph on
+foreach
+\emph default
+ entirely.
+\end_layout
+
+\begin_layout Paragraph
+Conflict between threaded BLAS and R profiling
+\end_layout
+
+\begin_layout Standard
+There is also a conflict between threaded BLAS and R profiling, so if you
+ are using 
+\emph on
+Rprof()
+\emph default
+, you may need to set OMP_NUM_THREADS to one.
+ This has definitely occurred with openBLAS; I'm not sure about other threaded
+ BLAS libraries.
+\end_layout
+
+\begin_layout Paragraph
+Speed and threaded BLAS
+\end_layout
+
+\begin_layout Standard
+In many cases, using multiple threads for linear algebra operations will
+ outperform using a single thread, but there is no guarantee that this will
+ be the case, in particular for operations with small matrices and vectors.
+ Testing with openBLAS suggests that sometimes a job may take more time
+ when using multiple threads; this seems to be less likely with ACML.
+ This presumably occurs because openBLAS is not doing a good job in detecting
+ when the overhead of threading outweights the gains from distributing the
+ computations.
+ You can compare speeds by setting OMP_NUM_THREADS to different values.
+ In cases where threaded linear algebra is slower than unthreaded, you would
+ want to set OMP_NUM_THREADS to 1.
+ 
+\end_layout
+
+\begin_layout Standard
+Therefore I recommend that you test any large jobs to compare performance
+ with a single thread vs.
+ multiple threads.
+ Only if you see a substantive improvement with multiple threads does it
+ make sense to have OMP_NUM_THREADS be greater than one.
+\end_layout
+
+\begin_layout Section
+Basic shared memory parallel programming in R
+\end_layout
+
+\begin_layout Subsection
+foreach
+\end_layout
+
+\begin_layout Standard
+A simple way to exploit parallelism in R when you have an embarrassingly
+ parallel problem (one where you can split the problem up into independent
+ chunks) is to use the 
+\emph on
+foreach
+\emph default
+ package to do a for loop in parallel.
+ For example, bootstrapping, random forests, simulation studies, cross-validatio
+n and many other statistical methods can be handled in this way.
+ You would not want to use 
+\emph on
+foreach
+\emph default
+ if the iterations were not independent of each other.
+\end_layout
+
+\begin_layout Standard
+The 
+\emph on
+foreach
+\emph default
+ package provides a 
+\emph on
+foreach
+\emph default
+ command that allows you to do this easily.
+ 
+\emph on
+foreach
+\emph default
+ can use a variety of parallel 
+\begin_inset Quotes eld
+\end_inset
+
+back-ends
+\begin_inset Quotes erd
+\end_inset
+
+.
+ It can use 
+\emph on
+Rmpi
+\emph default
+ to access cores in a distributed memory setting as discussed in Section
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Distributed-memory"
+
+\end_inset
+
+ or the 
+\emph on
+parallel
+\emph default
+ or 
+\emph on
+multicore
+\emph default
+ packages to use shared memory cores.
+ When using 
+\emph on
+parallel
+\emph default
+ or 
+\emph on
+multicore
+\emph default
+ as the back-end, you should see multiple processes (as many as you registered;
+ ideally each at 100%) when you look at 
+\emph on
+top
+\emph default
+.
+ The multiple processes are created by forking or using sockets; this is
+ discussed a bit more later in this document.
+\end_layout
+
+\begin_layout Chunk
+
+<<foreach, eval=FALSE, tidy=FALSE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+The result of 
+\emph on
+foreach
+\emph default
+ will generally be a list, unless 
+\emph on
+foreach
+\emph default
+ is able to put it into a simpler R object.
+ Note that 
+\emph on
+foreach
+\emph default
+ also provides some additional functionality for collecting and managing
+ the results that mean that you don't have to do some of the bookkeeping
+ you would need to do if writing your own for loop.
+\end_layout
+
+\begin_layout Standard
+You can debug by running serially using 
+\emph on
+%do%
+\emph default
+ rather than 
+\emph on
+%dopar%
+\emph default
+.
+ Note that you may need to load packages within the 
+\emph on
+foreach
+\emph default
+ construct to ensure a package is available to all of the calculations.
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Caution
+\series default
+: Note that I didn't pay any attention to possible danger in generating
+ random numbers in separate processes.
+ More on this issue in the section on RNG (Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:RNG"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Subsection
+parallel apply (parallel package)
+\end_layout
+
+\begin_layout Standard
+The 
+\emph on
+parallel
+\emph default
+ package has the ability to parallelize the various 
+\emph on
+apply()
+\emph default
+ functions (
+\emph on
+apply
+\emph default
+, 
+\emph on
+lapply
+\emph default
+, 
+\emph on
+sapply
+\emph default
+, etc.) and parallelize vectorized functions.
+ It's a bit hard to find the 
+\begin_inset CommandInset href
+LatexCommand href
+name "vignette"
+target "http://stat.ethz.ch/R-manual/R-devel/library/parallel/doc/parallel.pdf"
+
+\end_inset
+
+ for the parallel package because parallel is not listed as one of the contribut
+ed packages on CRAN.
+\end_layout
+
+\begin_layout Standard
+First let's consider parallel apply.
+\end_layout
+
+\begin_layout Chunk
+
+<<parallelApply, eval=TRUE, tidy=FALSE, cache=TRUE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+Note that some R packages can directly interact with the parallelization
+ packages to work with multiple cores.
+ E.g., the 
+\emph on
+boot
+\emph default
+ package can make use of the 
+\emph on
+multicore
+\emph default
+ package directly.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+see help on mcparallel and test if it applies to foreach
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Using mcparallel() to manually parallelize individual tasks
+\end_layout
+
+\begin_layout Standard
+One can use 
+\emph on
+mcparallel()
+\emph default
+ in the 
+\emph on
+parallel
+\emph default
+ package to send different chunks of code to different processes.
+ Here we would need to manage the number of tasks so that we don't have
+ more tasks than available cores.
+\end_layout
+
+\begin_layout Chunk
+
+<<mcparallel, eval=TRUE, cache=TRUE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+Note that 
+\emph on
+mcparallel()
+\emph default
+ also allows the use of the 
+\emph on
+mc.set.seed
+\emph default
+ argument as with 
+\emph on
+mclapply()
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+Note that on the cluster, one should create only as many parallel blocks
+ of code as were requested when submitting the job.
+\end_layout
+
+\begin_layout Section
+Distributed memory
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Distributed-memory"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+batch.R has code to be executed as R batch job to test
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Use of MPI as a black box for embarrassingly parallel computation
+\end_layout
+
+\begin_layout Subsubsection
+foreach in R on a single node
+\end_layout
+
+\begin_layout Standard
+One reason to use Rmpi on a single node is that for machines using openBLAS
+ (all of the compute servers except for the cluster nodes), there is a conflict
+ between the 
+\emph on
+multicore
+\emph default
+/
+\emph on
+parallel
+\emph default
+'s forking functionality and openBLAS that can cause 
+\emph on
+foreach
+\emph default
+ to hang when used with the 
+\emph on
+doParallel
+\emph default
+ or 
+\emph on
+doMC
+\emph default
+ parallel back ends.
+\end_layout
+
+\begin_layout Standard
+Just as we used 
+\emph on
+foreach
+\emph default
+ in a shared memory context, we can use it in a distributed memory context
+ as well, and R will handle all everything behind the scenes for you.
+ 
+\end_layout
+
+\begin_layout Standard
+Start R through the 
+\emph on
+mpirun
+\emph default
+ command as discussed above, either as a batch job or for interactive use:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+mpirun -machinefile .hosts -np 1 R CMD BATCH --no-save file.R file.out
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+mpirun -machinefile .hosts -np 1 R --no-save
+\end_layout
+
+\begin_layout Standard
+Here's R code for using 
+\emph on
+Rmpi
+\emph default
+ as the back-end to 
+\emph on
+foreach
+\emph default
+.
+ If you call 
+\emph on
+startMPIcluster()
+\emph default
+ with no arguments, it will start up one fewer worker processes than the
+ number of hosts listed in 
+\family typewriter
+.hosts
+\family default
+, so your R code will be more portable.
+ The reason for the 
+\family typewriter
+-np 1
+\family default
+ flag in the 
+\emph on
+mpirun
+\emph default
+ invocation is that the worker processes are started within the R code rather
+ than by 
+\emph on
+mpirun
+\emph default
+.
+\end_layout
+
+\begin_layout Chunk
+
+<<Rmpi-foreach-multipleNodes, eval=FALSE, cache=TRUE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+One can also call 
+\emph on
+mpirun
+\emph default
+ to start R.
+ Here one requests just a single process, as R will manage the task of spawning
+ slaves.
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+mpirun -np 1 R --no-save
+\end_layout
+
+\begin_layout Plain Layout
+or
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+mpirun -np 1 R CMD BATCH --no-save example.R example.out
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+[Ask Ryan if he has thoughts as to what the difference is, but not clear
+ you'd really want to do this] 
+\end_layout
+
+\end_inset
+
+Note that running R this way through 
+\emph on
+mpirun
+\emph default
+ is clunky as the usual tab completion and command history are not available
+ and errors cause R to quit, because passing things through 
+\emph on
+mpirun
+\emph default
+ causes R to think it is not running interactively.
+ Given this, at the moment it's not clear to me why you would want to invoke
+ R using 
+\emph on
+mpirun
+\emph default
+, but I include it for completeness.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A caution concerning Rmpi/doMPI: when you invoke 
+\emph on
+startMPIcluster()
+\emph default
+, all the slave R processes become 100% active and stay active until the
+ cluster is closed.
+ In addition, when 
+\emph on
+foreach
+\emph default
+ is actually running, the master process also becomes 100% active.
+ So using this functionality involves some inefficiency in CPU usage.
+ This inefficiency is not seen with a sockets cluster (see next) nor when
+ using other Rmpi functionality - i.e., starting slaves with 
+\emph on
+mpi.spawn.Rslaves()
+\emph default
+ and then issuing commands to the slaves.
+\end_layout
+
+\begin_layout Standard
+If you specified -np with more than one process then as with the C-based
+ MPI job above, you can control the threading via OMP_NUM_THREADS and the
+ -x flag to 
+\emph on
+mpirun
+\emph default
+.
+ Note that this only works when the R processes are directly started by
+ 
+\emph on
+mpirun
+\emph default
+, which they are not if you set -np 1.
+ The 
+\emph on
+maxcores
+\emph default
+ argument to 
+\emph on
+startMPIcluster()
+\emph default
+ does not seem to function (perhaps it does on other systems).
+\end_layout
+
+\begin_layout Subsubsection
+foreach in R on multiple nodes
+\end_layout
+
+\begin_layout Standard
+[manually on a network with multiple servers - demo on AWS cluster]
+\end_layout
+
+\begin_layout Subsubsection
+Sockets in R example
+\end_layout
+
+\begin_layout Standard
+One can also set up a cluster via sockets.
+ You just need to specify a character vector with the machine names as the
+ input to 
+\emph on
+makeCluster()
+\emph default
+.
+ 
+\end_layout
+
+\begin_layout Chunk
+
+<<sockets-multipleNodes, cache=TRUE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Subsection
+MPI basics
+\end_layout
+
+\begin_layout Standard
+There are multiple MPI implementations, of which 
+\emph on
+openMPI
+\emph default
+ and 
+\emph on
+mpich
+\emph default
+ are very common.
+\end_layout
+
+\begin_layout Standard
+In MPI programming, the same code runs on all the machines.
+ This is called SPMD (single program, multiple data).
+ As we saw above, one invokes the same code (same program) multiple times,
+ but the behavior of the code can be different based on querying the rank
+ (ID) of the process.
+ Since MPI operates in a distributed fashion, any transfer of information
+ between processes must be done explicitly via send and receive calls (e.g.,
+ 
+\emph on
+MPI_Send
+\emph default
+, 
+\emph on
+MPI_Recv
+\emph default
+, 
+\emph on
+MPI_Isend
+\emph default
+, and 
+\emph on
+MPI_Irecv
+\emph default
+).
+ (The 
+\begin_inset Quotes eld
+\end_inset
+
+MPI_
+\begin_inset Quotes erd
+\end_inset
+
+ is for C code; C++ just has 
+\emph on
+Send
+\emph default
+, 
+\emph on
+Recv
+\emph default
+, etc.)
+\end_layout
+
+\begin_layout Standard
+The latter two of these functions (
+\emph on
+MPI_Isend
+\emph default
+ and 
+\emph on
+MPI_Irecv
+\emph default
+) are so-called non-blocking calls.
+ One important concept to understand is the difference between blocking
+ and non-blocking calls.
+ Blocking calls wait until the call finishes, while non-blocking calls return
+ and allow the code to continue.
+ Non-blocking calls can be more efficient, but can lead to problems with
+ synchronization between processes.
+ 
+\end_layout
+
+\begin_layout Standard
+In addition to send and receive calls to transfer to and from specific processes
+, there are calls that send out data to all processes (
+\emph on
+MPI_Scatter
+\emph default
+), gather data back (
+\emph on
+MPI_Gather
+\emph default
+) and perform reduction operations (
+\emph on
+MPI_Reduce
+\emph default
+).
+\end_layout
+
+\begin_layout Standard
+Debugging MPI/
+\emph on
+Rmpi
+\emph default
+ code can be tricky because communication can hang, error messages from
+ the workers may not be seen or readily accessible and it can be difficult
+ to assess the state of the worker processes.
+ 
+\end_layout
+
+\begin_layout Standard
+First let's get a feel for MPI in the simple context of a single node.
+ Of course it's a bit silly to do this in reality on a single node on which
+ one can take advantage of shared memory.
+ There's not much reason to use MPI on a single node as there's a cost to
+ the message passing relative to shared memory, but it is useful to be able
+ to test the code on a single machine without having to worry about networking
+ issues across nodes.
+\end_layout
+
+\begin_layout Subsubsection
+Using Rmpi to write code for distributed computation
+\end_layout
+
+\begin_layout Standard
+R users can use 
+\emph on
+Rmpi
+\emph default
+ to interface with MPI.
+ To use 
+\emph on
+Rmpi
+\emph default
+, you can simply start R as you normally do by invoking a command-line R
+ session or using R CMD BATCH.
+\end_layout
+
+\begin_layout Standard
+Here's some example code that uses actual 
+\emph on
+Rmpi
+\emph default
+ syntax (as opposed to 
+\emph on
+foreach
+\emph default
+ with Rmpi as the back-end, which we'll see in a moment), which is very
+ similar to the MPI C syntax we've already seen.
+ This code runs in a master-slave paradigm where the master starts the slaves
+ and invokes commands on them.
+ It may be possible to run 
+\emph on
+Rmpi
+\emph default
+ in a context where each process runs the same code based on invoking with
+ Rmpi, but I haven't investigated this further.
+ 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+[just mpirun -np and then print out mpi.comm.rank() does not print out for
+ more than one process]
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Chunk
+
+<<Rmpi-usingMPIsyntax, cache=TRUE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+Note that if you do this in interactive mode, some of the usual functionality
+ of command line R (tab completion, scrolling for history) is not enabled
+ and errors will cause R to quit.
+ This occurs because passing things through 
+\emph on
+mpirun
+\emph default
+ causes R to think it is not running interactively.
+\end_layout
+
+\begin_layout Subparagraph
+Note on supercomputers
+\end_layout
+
+\begin_layout Standard
+Note: in some cases a cluster/supercomputer will be set up so that 
+\emph on
+Rmpi
+\emph default
+ is loaded and the worker processes are already started when you start R.
+ In this case you wouldn't need to load 
+\emph on
+Rmpi
+\emph default
+ or use 
+\emph on
+mpi.spawn.Rslaves().
+ 
+\emph default
+You can always check 
+\emph on
+mpi.comm.size()
+\emph default
+ to see if the workers are already set up.
+\end_layout
+
+\begin_layout Subsubsection
+Using pbdR for distributed computation
+\end_layout
+
+\begin_layout Standard
+[first install pbdR]
+\end_layout
+
+\begin_layout Standard
+[1] distributed linear algebra
+\end_layout
+
+\begin_layout Standard
+[2] parallel style apply
+\end_layout
+
+\begin_layout Standard
+[3] interfacing with MPI
+\end_layout
+
+\begin_layout Standard
+There is a relatively new effort to enhance R's capability for distributed
+ memory processing called pbdR.
+ pbdR is designed for SPMD processing in batch mode.
+ I haven't had time to pull together any example code, but pbdR provides
+ the following capabilities:
+\end_layout
+
+\begin_layout Itemize
+an alternative to Rmpi for interfacing with MPI
+\end_layout
+
+\begin_layout Itemize
+the ability to do some parallel apply-style computations
+\end_layout
+
+\begin_layout Itemize
+the ability to do distributed linear algebra by interfacing to ScaLapack
+\end_layout
+
+\begin_layout Standard
+Personally, I think the last of the three is the most exciting as its a
+ functionality not readily available in R or even more generally in other
+ readily-accessible software.
+\end_layout
+
+\begin_layout Section
+Running Parallel R Jobs on the Biostat Cluster
+\end_layout
+
+\begin_layout Standard
+basic foreach example
+\end_layout
+
+\begin_layout Standard
+doMPI example
+\end_layout
+
+\begin_layout Section
+Using R on Cloud VMs and Cloud-based Clusters
+\end_layout
+
+\begin_layout Standard
+For Amazon-based machines, we'll use the BCE image as our starting point
+ and add software to it.
+\end_layout
+
+\begin_layout Subsection
+Starting an Amazon EC2 Instance
+\end_layout
+
+\begin_layout Standard
+[show console - use BCE instructions]
+\end_layout
+
+\begin_layout Standard
+[show Aaron's approach]
+\end_layout
+
+\begin_layout Standard
+[install parallel software]
+\end_layout
+
+\begin_layout Standard
+Once you are logged in to the VM, running parallel R jobs on a single node
+ should be exactly the same as we've already seen on a BCE VM running on
+ your laptop.
+\end_layout
+
+\begin_layout Subsection
+Starting a Cluster of EC2 Instances
+\end_layout
+
+\begin_layout Standard
+[starcluster instructions]
+\end_layout
+
+\begin_layout Standard
+[give them template config file]
+\end_layout
+
+\begin_layout Standard
+Show them Rmpi/pbdR/doMPI startup using mpirun
+\end_layout
+
+\begin_layout Section
+Efficiency and Profiling
+\end_layout
+
+\begin_layout Section
+RNG 
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:RNG"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The key thing when thinking about random numbers in a parallel context is
+ that you want to avoid having the same 'random' numbers occur on multiple
+ processes.
+ On a computer, random numbers are not actually random but are generated
+ as a sequence of pseudo-random numbers designed to mimic true random numbers.
+ The sequence is finite (but very long) and eventually repeats itself.
+ When one sets a seed, one is choosing a position in that sequence to start
+ from.
+ Subsequent random numbers are based on that subsequence.
+ All random numbers can be generated from one or more random uniform numbers,
+ so we can just think about a sequence of values between 0 and 1.
+ 
+\end_layout
+
+\begin_layout Standard
+The worst thing that could happen is that one sets things up in such a way
+ that every process is using the same sequence of random numbers.
+ This could happen if you mistakenly set the same seed in each process,
+ e.g., using 
+\emph on
+set.seed(mySeed)
+\emph default
+ in R on every process.
+\end_layout
+
+\begin_layout Standard
+The naive approach is to use a different seed for each process.
+ E.g., if your processes are numbered 
+\begin_inset Formula $id=1,\ldots,p$
+\end_inset
+
+, with 
+\emph on
+id
+\emph default
+ unique to a process, using 
+\emph on
+set.seed(id)
+\emph default
+ on each process.
+ This is likely not to cause problems, but raises the danger that two (or
+ more sequences) might overlap.
+ For an algorithm with dependence on the full sequence, such as an MCMC,
+ this probably won't cause big problems (though you likely wouldn't know
+ if it did), but for something like simple simulation studies, some of your
+ 'independent' samples could be exact replicates of a sample on another
+ process.
+ Given the period length of the default generators in R, Matlab and Python,
+ this is actually quite unlikely, but it is a bit sloppy.
+\end_layout
+
+\begin_layout Standard
+One approach to avoid the problem is to do all your RNG on one process and
+ distribute the random deviates, but this can be infeasible with many random
+ numbers.
+\end_layout
+
+\begin_layout Standard
+More generally to avoid this problem, the key is to use an algorithm that
+ ensures sequences that do not overlap.
+\end_layout
+
+\begin_layout Subsection
+Ensuring separate sequences in R
+\end_layout
+
+\begin_layout Standard
+In R, there are two packages that deal with this, 
+\emph on
+rlecuyer
+\emph default
+ and 
+\emph on
+rsprng
+\emph default
+.
+ We'll go over 
+\emph on
+rlecuyer
+\emph default
+, as I've heard that 
+\emph on
+rsprng
+\emph default
+ is deprecated (though there is no evidence of this on CRAN) and 
+\emph on
+rsprng
+\emph default
+ is (at the moment) not available for the Mac.
+\end_layout
+
+\begin_layout Standard
+The L'Ecuyer algorithm has a period of 
+\begin_inset Formula $2^{191}$
+\end_inset
+
+, which it divides into subsequences of length 
+\begin_inset Formula $2^{127}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+With the parallel package
+\end_layout
+
+\begin_layout Standard
+Here's how you initialize independent sequences on different processes when
+ using the 
+\emph on
+parallel
+\emph default
+ package's parallel apply functionality (illustrated here with 
+\emph on
+parSapply()
+\emph default
+.
+\end_layout
+
+\begin_layout Chunk
+
+<<RNG-apply, eval=FALSE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+If you want to explicitly move from stream to stream, you can use 
+\emph on
+nextRNGStream()
+\emph default
+.
+ For example:
+\end_layout
+
+\begin_layout Chunk
+
+<<RNGstream, eval=FALSE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+When using 
+\emph on
+mclapply()
+\emph default
+, you can use the 
+\emph on
+mc.set.seed
+\emph default
+ argument as follows (note that 
+\emph on
+mc.set.seed
+\emph default
+ is TRUE by default, so you should get different seeds for the different
+ processes by default), but one needs to invoke 
+\family typewriter
+RNGkind("L'Ecuyer-CMRG")
+\family default
+ to get independent streams via the L'Ecuyer algorithm.
+\end_layout
+
+\begin_layout Chunk
+
+<<RNG-mclapply, eval=FALSE, tidy=FALSE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+The documentation for 
+\emph on
+mcparallel()
+\emph default
+ gives more information about reproducibility based on 
+\emph on
+mc.set.seed
+\emph default
+.
+\end_layout
+
+\begin_layout Subsubsection
+With foreach
+\end_layout
+
+\begin_layout Paragraph*
+Getting independent streams
+\end_layout
+
+\begin_layout Standard
+One question is whether 
+\emph on
+foreach
+\emph default
+ deals with RNG correctly.
+ This is not documented, but the developers (Revolution Analytics) are well
+ aware of RNG issues.
+ Digging into the underlying code reveals that the 
+\emph on
+doMC
+\emph default
+ and 
+\emph on
+doParallel
+\emph default
+ backends both invoke 
+\emph on
+mclapply()
+\emph default
+ and set 
+\emph on
+mc.set.seed
+\emph default
+ to TRUE by default.
+ This suggests that the discussion above r.e.
+ 
+\emph on
+mclapply()
+\emph default
+ holds for 
+\emph on
+foreach
+\emph default
+ as well, so you should do 
+\family typewriter
+RNGkind("L'Ecuyer-CMRG")
+\family default
+ before your foreach call.
+ For 
+\emph on
+doMPI
+\emph default
+, as of version 0.2, you can do something like this, which uses L'Ecuyer
+ behind the scenes:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+cl <- makeCluster(nSlots)
+\begin_inset Newline newline
+\end_inset
+
+setRngDoMPI(cl, seed=0)
+\end_layout
+
+\begin_layout Paragraph*
+Ensuring reproducibility
+\end_layout
+
+\begin_layout Standard
+While using 
+\emph on
+foreach
+\emph default
+ as just described should ensure that the streams on each worker are are
+ distinct, it does not ensure reproducibility because task chunks may be
+ assigned to workers differently in different runs and the substreams are
+ specific to workers, not to tasks.
+ 
+\end_layout
+
+\begin_layout Standard
+For 
+\emph on
+doMPI
+\emph default
+, you can specify a different RNG substream for each task chunk in a way
+ that ensures reproducibility.
+ Basically you provide a list called 
+\emph on
+.options.mpi
+\emph default
+ as an argument to 
+\emph on
+foreach
+\emph default
+, with 
+\emph on
+seed
+\emph default
+ as an element of the list:
+\end_layout
+
+\begin_layout Chunk
+
+<<RNG-doMPI, eval=TRUE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+That single seed then initializes the RNG for the first task, and subsequent
+ tasks get separate substreams, using the L'Ecuyer algorithm, based on 
+\emph on
+nextRNGStream()
+\emph default
+.
+ Note that the 
+\emph on
+doMPI
+\emph default
+ developers also suggest using the 
+\emph on
+chunkSize
+\emph default
+ option (also specified as an element of 
+\emph on
+.options.mpi
+\emph default
+) when using 
+\emph on
+seed
+\emph default
+.
+ See 
+\family typewriter
+?
+\begin_inset Quotes erd
+\end_inset
+
+doMPI-package
+\begin_inset Quotes erd
+\end_inset
+
+
+\family default
+ for more details.
+\end_layout
+
+\begin_layout Standard
+For other backends, such as 
+\emph on
+doParallel
+\emph default
+, there is a package called 
+\emph on
+doRNG
+\emph default
+ that ensures that 
+\emph on
+foreach
+\emph default
+ loops are reproducible.
+ Here's how you do it:
+\end_layout
+
+\begin_layout Chunk
+
+<<RNG-doRNG>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+Alternatively, you can do:
+\end_layout
+
+\begin_layout Chunk
+
+<<RNG-doRNG2>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\end_body
+\end_document
