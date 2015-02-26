@@ -29,7 +29,7 @@ taskFun <- function(){
 	mn <- mean(rnorm(10000000))
 	return(mn)
 }
-nCores <- 4  
+nCores <- 2  
 registerDoParallel(nCores) 
 # registerDoMC(nCores) # alternative to registerDoParallel
 # cl <- startMPIcluster(nCores); registerDoMPI(cl) # when using Rmpi as the back-end
@@ -44,10 +44,18 @@ out <- foreach(i = 1:100) %dopar% {
 ## @knitr parallelApply
 
 require(parallel)
-nCores <- 4
+nCores <- 2
+
+################################
+# using forking (mclapply)
+################################
+
+system.time(
+	res <- mclapply(input, testFun, mc.cores = nCores) 
+)
 
 #############################
-# using sockets
+# using sockets (parLapply)
 #############################
 
 # ?clusterApply
@@ -70,13 +78,6 @@ system.time(
 )
 res <- parLapply(cl, input, testFun)
 
-################################
-# using forking
-################################
-
-system.time(
-	res <- mclapply(input, testFun, mc.cores = nCores) 
-)
 
 
 ## @knitr mcparallel
@@ -98,7 +99,7 @@ system.time({
 # example syntax of standard MPI functions
 
 library(Rmpi)
-mpi.spawn.Rslaves(nslaves = 4)
+mpi.spawn.Rslaves(nslaves = 2)
 
 n = 5
 mpi.bcast.Robj2slave(n)
@@ -125,6 +126,28 @@ for(i in 1:(mpi.comm.size()-1)){
 print(results)
 
 
+## @knitr Rmpi-foreach-oneNode
+
+library(Rmpi)
+library(doMPI)
+
+nCores = 2
+
+cl = startMPIcluster(nCores)                                         
+
+registerDoMPI(cl)
+clusterSize(cl) # just to check
+
+nIts <- 200
+
+results <- foreach(i = 1:nIts) %dopar% {
+  out = mean(rnorm(1e7))
+}
+
+closeCluster(cl)
+
+mpi.quit()
+
 ## @knitr Rmpi-foreach-multipleNodes
 
 ## invoke R as:
@@ -140,7 +163,9 @@ cl = startMPIcluster()  # by default will start one fewer slave
 registerDoMPI(cl)
 clusterSize(cl) # just to check
 
-results <- foreach(i = 1:200) %dopar% {
+nIts <- 200
+
+results <- foreach(i = 1:nIts) %dopar% {
   out = mean(rnorm(1e7))
 }
 
@@ -154,9 +179,9 @@ mpi.quit()
 
 library(parallel)
 
-machineVec = c(rep("arwen.berkeley.edu", 4),
-    rep("treebeard.berkeley.edu", 2),
-    rep("beren.berkeley.edu", 2))
+machineVec = c(rep("master", 2),
+    rep("node001", 2),
+    rep("node002", 2))
 cl = makeCluster(machineVec)
 
 n = 1e7
@@ -180,7 +205,7 @@ testFun <- function(i){
 	return(val)
 }
 
-nSlots <- 4
+nSlots <- 2
 RNGkind()
 cl <- makeCluster(nSlots)
 iseed <- 0
@@ -219,7 +244,7 @@ identical(res,res2)
 
 ## @knitr RNG-doMPI
 
-nslaves <- 4
+nslaves <- 2
 library(doMPI, quietly = TRUE)
 cl <- startMPIcluster(nslaves)
 registerDoMPI(cl) 
@@ -234,7 +259,7 @@ identical(result, result2)
 ## @knitr RNG-doRNG
 
 rm(result, result2)
-nCores <- 4
+nCores <- 2
 library(doRNG, quietly = TRUE)
 library(doParallel)
 registerDoParallel(nCores) 

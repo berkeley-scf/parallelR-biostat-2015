@@ -127,7 +127,17 @@ options(replace.assign=TRUE, width=55)
 
 \begin_layout Chunk
 
-read_chunk('parallel.R') 
+read_chunk('parallel.R')
+\end_layout
+
+\begin_layout Chunk
+
+read_chunk('parallel.sh')
+\end_layout
+
+\begin_layout Chunk
+
+read_chunk('starcluster.sh')
 \end_layout
 
 \begin_layout Chunk
@@ -505,6 +515,41 @@ I'm happy to help discuss specific circumstances, so just email consult@stat.ber
 eley.edu.
 \end_layout
 
+\begin_layout Paragraph
+Static vs.
+ dynamic assignment of tasks
+\end_layout
+
+\begin_layout Standard
+Some of R's parallel functions allow you to say whether the tasks can be
+ divided up and allocated to the workers at the beginning or whether tasks
+ should be assigned individually as previous tasks complete.
+ E.g., the 
+\emph on
+mc.preschedule
+\emph default
+ argument in 
+\emph on
+mclapply()
+\emph default
+ and the 
+\emph on
+.scheduling
+\emph default
+ argument in 
+\emph on
+parLapply()
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+Basically if you have many tasks that each take similar time, you want to
+ preschedule to reduce communication.
+ If you have few tasks or tasks with highly variable completion times, you
+ don't want to preschedule, to improve load-balancing.
+\end_layout
+
 \begin_layout Section
 Threaded linear algebra and the BLAS 
 \end_layout
@@ -636,7 +681,7 @@ The R installation manual gives information on how to link R to a fast BLAS.
 
 \begin_layout Chunk
 
-<<etc-alternatives, eval=FALSE>>=
+<<etc-alternatives, eval=FALSE, engine='bash'>>=
 \end_layout
 
 \begin_layout Chunk
@@ -650,7 +695,7 @@ To use a fast, threaded BLAS enabled on your own Mac, do the following:
 
 \begin_layout Chunk
 
-<<MacBLAS, eval=FALSE>>=
+<<MacBLAS, eval=FALSE, engine='bash'>>=
 \end_layout
 
 \begin_layout Chunk
@@ -1099,9 +1144,8 @@ foreach in R on a single node
 \end_layout
 
 \begin_layout Standard
-One reason to use Rmpi on a single node is that for machines using openBLAS
- (all of the compute servers except for the cluster nodes), there is a conflict
- between the 
+One reason to use Rmpi on a single node is that in some contexts the threaded
+ BLAS (particularly openBLAS) conflicts with 
 \emph on
 multicore
 \emph default
@@ -1109,7 +1153,8 @@ multicore
 \emph on
 parallel
 \emph default
-'s forking functionality and openBLAS that can cause 
+'s forking functionality.
+ This can cause 
 \emph on
 foreach
 \emph default
@@ -1121,37 +1166,11 @@ doParallel
 \emph on
 doMC
 \emph default
- parallel back ends.
-\end_layout
-
-\begin_layout Standard
-Just as we used 
+ parallel back ends (also with 
 \emph on
-foreach
+mclapply()
 \emph default
- in a shared memory context, we can use it in a distributed memory context
- as well, and R will handle all everything behind the scenes for you.
- 
-\end_layout
-
-\begin_layout Standard
-Start R through the 
-\emph on
-mpirun
-\emph default
- command as discussed above, either as a batch job or for interactive use:
-\end_layout
-
-\begin_layout Standard
-
-\family typewriter
-mpirun -machinefile .hosts -np 1 R CMD BATCH --no-save file.R file.out
-\end_layout
-
-\begin_layout Standard
-
-\family typewriter
-mpirun -machinefile .hosts -np 1 R --no-save
+) and OMP_NUM_THREADS set to a value greater than one.
 \end_layout
 
 \begin_layout Standard
@@ -1164,35 +1183,12 @@ Rmpi
 foreach
 \emph default
 .
- If you call 
-\emph on
-startMPIcluster()
-\emph default
- with no arguments, it will start up one fewer worker processes than the
- number of hosts listed in 
-\family typewriter
-.hosts
-\family default
-, so your R code will be more portable.
- The reason for the 
-\family typewriter
--np 1
-\family default
- flag in the 
-\emph on
-mpirun
-\emph default
- invocation is that the worker processes are started within the R code rather
- than by 
-\emph on
-mpirun
-\emph default
-.
+ 
 \end_layout
 
 \begin_layout Chunk
 
-<<Rmpi-foreach-multipleNodes, eval=FALSE, cache=TRUE>>=
+<<Rmpi-foreach-oneNode, eval=FALSE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
@@ -1285,33 +1281,74 @@ mpi.spawn.Rslaves()
  and then issuing commands to the slaves.
 \end_layout
 
+\begin_layout Subsubsection
+foreach in R on multiple nodes
+\end_layout
+
 \begin_layout Standard
-If you specified -np with more than one process then as with the C-based
- MPI job above, you can control the threading via OMP_NUM_THREADS and the
- -x flag to 
+For this, we need to start R through the 
+\emph on
+mpirun
+\emph default
+ command so that inter-node communication is handled by MPI.
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+mpirun -machinefile .hosts -np 1 R CMD BATCH --no-save file.R file.out
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+mpirun -machinefile .hosts -np 1 R --no-save
+\end_layout
+
+\begin_layout Standard
+Here's R code for using 
+\emph on
+Rmpi
+\emph default
+ as the back-end to 
+\emph on
+foreach
+\emph default
+.
+ If you call 
+\emph on
+startMPIcluster()
+\emph default
+ with no arguments, it will start up one fewer worker processes than the
+ number of hosts listed in 
+\family typewriter
+.hosts
+\family default
+, so your R code will be more portable.
+ The reason for the 
+\family typewriter
+-np 1
+\family default
+ flag in the 
+\emph on
+mpirun
+\emph default
+ invocation is that the worker processes are started within the R code rather
+ than by 
 \emph on
 mpirun
 \emph default
 .
- Note that this only works when the R processes are directly started by
- 
-\emph on
-mpirun
-\emph default
-, which they are not if you set -np 1.
- The 
-\emph on
-maxcores
-\emph default
- argument to 
-\emph on
-startMPIcluster()
-\emph default
- does not seem to function (perhaps it does on other systems).
 \end_layout
 
-\begin_layout Subsubsection
-foreach in R on multiple nodes
+\begin_layout Chunk
+
+<<Rmpi-foreach-multipleNodes, eval=FALSE, cache=TRUE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
 \end_layout
 
 \begin_layout Standard
@@ -1625,12 +1662,96 @@ For Amazon-based machines, we'll use the BCE image as our starting point
  and add software to it.
 \end_layout
 
+\begin_layout Standard
+
+\series bold
+WARNING: do not share your Amazon authentication info (AWS_ACCESS_KEY_ID
+ or AWS_SECRET_ACCESS_KEY) in any public setting, such as a public Github
+ account.
+
+\series default
+ A user in my class did this and we ended up with thousands of dollars in
+ charges from hackers starting up instances (probably to mine Bitcoin).
+\end_layout
+
 \begin_layout Subsection
 Starting an Amazon EC2 Instance
 \end_layout
 
+\begin_layout Paragraph
+Point-and-click via the EC2 console
+\end_layout
+
 \begin_layout Standard
-[show console - use BCE instructions]
+To start up an EC2 virtual machine based on BCE, follow the instructions
+ at 
+\begin_inset CommandInset href
+LatexCommand href
+target "bce.berkeley.edu/install.html"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+To logon, you'll need to make use of SSH keys.
+ Here's how to get things going with BCE such that you can logon as the
+ oski user.
+ You obtain the <IP_address> by clicking on the 
+\begin_inset Quotes eld
+\end_inset
+
+Connect
+\begin_inset Quotes erd
+\end_inset
+
+ button on the EC2 console.
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{verbatim}
+\end_layout
+
+\begin_layout Plain Layout
+
+ssh -i ~/.ssh/your_private_key_file ubuntu@<IP_address> sudo bash modify-for-aws.s
+h
+\end_layout
+
+\begin_layout Plain Layout
+
+ssh -i ~/.ssh/your_private_key_file ubuntu@<IP_address> sudo bash add-parallel-to
+ols.sh
+\end_layout
+
+\begin_layout Plain Layout
+
+# Now you can ssh in directly as the oski user.
+\end_layout
+
+\begin_layout Plain Layout
+
+ssh -i ~/.ssh/your_private_key_file oski@<IP_address> 
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{verbatim}
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1638,7 +1759,53 @@ Starting an Amazon EC2 Instance
 \end_layout
 
 \begin_layout Standard
-[install parallel software]
+Once you've logged into the instance, copy the files modify-for-aws.sh and
+ add-parallel-tools.sh to the instance and run them:
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{verbatim}
+\end_layout
+
+\begin_layout Plain Layout
+
+bash modify-for-aws.sh
+\end_layout
+
+\begin_layout Plain Layout
+
+bash add-parallel-tools.sh
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{verbatim}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now you can logon to the instance as the oski user (or just do 
+\begin_inset Quotes eld
+\end_inset
+
+su - oski
+\begin_inset Quotes erd
+\end_inset
+
+ if you are logged on as root) and do your work.
 \end_layout
 
 \begin_layout Standard
@@ -1647,16 +1814,332 @@ Once you are logged in to the VM, running parallel R jobs on a single node
  your laptop.
 \end_layout
 
+\begin_layout Paragraph
+By scripting
+\end_layout
+
+\begin_layout Standard
+Aaron Culich of Berkeley Research Computing recommends the following scripted
+ approach.
+\end_layout
+
 \begin_layout Subsection
 Starting a Cluster of EC2 Instances
 \end_layout
 
 \begin_layout Standard
-[starcluster instructions]
+We'll use a tool called 
+\begin_inset CommandInset href
+LatexCommand href
+name "Starcluster"
+target "http://star.mit.edu/cluster/index.html"
+
+\end_inset
+
+ to start EC2 clusters.
+ This manages setting up the networking between the nodes.
+ You'll need Starcluster installed on your local machine.
+ 
 \end_layout
 
 \begin_layout Standard
-[give them template config file]
+The file 
+\emph on
+starcluster.config
+\emph default
+ contains some basic settings you can use to start up an EC2 cluster based
+ on BCE.
+ In particular it has the AMI IDs for the BCE EC2 images.
+ You'll need to put your own AWS authentication information in the file
+ (or set these as environment variables in your shell session).
+ Rename the file 
+\emph on
+config
+\emph default
+ and put it in a directory called 
+\emph on
+.starcluster
+\emph default
+ in your home directory.
+ Then you can start an EC2 cluster and login as follows:
+\end_layout
+
+\begin_layout Chunk
+
+<<starcluster-start, eval=FALSE, engine='bash'>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
+\begin_layout Standard
+When you start the cluster via 
+\family typewriter
+starcluster start
+\family default
+, you should see logging information that looks like this, followed by some
+ instructions about how to restart, stop, and login to your cluster.
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{verbatim}
+\end_layout
+
+\begin_layout Plain Layout
+
+StarCluster - (http://star.mit.edu/cluster) (v.
+ 0.95.6)
+\end_layout
+
+\begin_layout Plain Layout
+
+Software Tools for Academics and Researchers (STAR)
+\end_layout
+
+\begin_layout Plain Layout
+
+Please submit bug reports to starcluster@mit.edu
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Validating cluster template settings...
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Cluster template settings are valid
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Starting cluster...
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Launching a 4-node cluster...
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Creating security group @sc-mycluster...
+\end_layout
+
+\begin_layout Plain Layout
+
+Reservation:r-e344eee9
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Waiting for instances to propagate...
+\end_layout
+
+\begin_layout Plain Layout
+
+4/4 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+ 100%  
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Waiting for cluster to come up...
+ (updating every 30s)
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Waiting for all nodes to be in a 'running' state...
+\end_layout
+
+\begin_layout Plain Layout
+
+4/4 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+ 100%  
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Waiting for SSH to come up on all nodes...
+\end_layout
+
+\begin_layout Plain Layout
+
+4/4 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+ 100%  
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Waiting for cluster to come up took 1.591 mins
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> The master node is ec2-52-10-188-152.us-west-2.compute.amazonaws.com
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Configuring cluster...
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Running plugin starcluster.clustersetup.DefaultClusterSetup
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Configuring hostnames...
+\end_layout
+
+\begin_layout Plain Layout
+
+4/4 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+ 100%  
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Creating cluster user: oski (uid: 1001, gid: 1001)
+\end_layout
+
+\begin_layout Plain Layout
+
+4/4 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+ 100%  
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Configuring scratch space for user(s): oski
+\end_layout
+
+\begin_layout Plain Layout
+
+4/4 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+ 100%  
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Configuring /etc/hosts on each node
+\end_layout
+
+\begin_layout Plain Layout
+
+4/4 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+ 100%  
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Starting NFS server on master
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Configuring NFS exports path(s):
+\end_layout
+
+\begin_layout Plain Layout
+
+/home
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Mounting all NFS export path(s) on 3 worker node(s)
+\end_layout
+
+\begin_layout Plain Layout
+
+3/3 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+ 100%  
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Setting up NFS took 0.070 mins
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Configuring passwordless ssh for root
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Configuring passwordless ssh for oski
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Configuring cluster took 0.227 mins
+\end_layout
+
+\begin_layout Plain Layout
+
+>>> Starting cluster took 1.860 mins
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{verbatim}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The other commands after the 
+\family typewriter
+starcluster start
+\family default
+ customize the EC2 cluster with some parallel R (and Python) tools, as well
+ as MPI.
+ In particular note that I've created a 
+\emph on
+.hosts
+\emph default
+ file for use with 
+\emph on
+mpirun
+\emph default
+.
+ The host file just contains lines with 
+\emph on
+master
+\emph default
+, 
+\emph on
+node001
+\emph default
+, 
+\emph on
+node002
+\emph default
+, ..., which are the internal names of the nodes in the cluster that Starcluster
+ has set.
 \end_layout
 
 \begin_layout Standard
