@@ -142,6 +142,21 @@ read_chunk('starcluster.sh')
 
 \begin_layout Chunk
 
+read_chunk('pbd-mpi.R')
+\end_layout
+
+\begin_layout Chunk
+
+read_chunk('pbd-apply.R')
+\end_layout
+
+\begin_layout Chunk
+
+read_chunk('pbd-linalg.R')
+\end_layout
+
+\begin_layout Chunk
+
 @
 \end_layout
 
@@ -1111,6 +1126,19 @@ Note that on the cluster, one should create only as many parallel blocks
  of code as were requested when submitting the job.
 \end_layout
 
+\begin_layout Subsection
+Running on the Biostat cluster
+\end_layout
+
+\begin_layout Standard
+Here's how you would submit an R job that uses shared memory on a single
+ node:
+\end_layout
+
+\begin_layout Standard
+BLAH
+\end_layout
+
 \begin_layout Section
 Distributed memory
 \begin_inset CommandInset label
@@ -1489,10 +1517,6 @@ Using Rmpi to write code for distributed computation
 \end_layout
 
 \begin_layout Standard
-Rmp
-\end_layout
-
-\begin_layout Standard
 R users can use 
 \emph on
 Rmpi
@@ -1652,12 +1676,65 @@ Let's see some basic examples of using pbdR.
 Interfacing with MPI
 \end_layout
 
+\begin_layout Standard
+Here's an example of distributing an embarrassingly parallel calculation
+ (estimating an integral via Monte Carlo - in this case estimating the value
+ of 
+\begin_inset Formula $\pi$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Chunk
+
+<<pbd-mpi, cache=TRUE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
 \begin_layout Paragraph
 Parallel apply
 \end_layout
 
+\begin_layout Standard
+Here's some basic syntax for doing a distributed apply() on a matrix that
+ is on one of the workers (i.e., the matrix is not distributed).
+\end_layout
+
+\begin_layout Chunk
+
+<<pbd-mpi, cache=TRUE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
+\end_layout
+
 \begin_layout Paragraph
 Distributed linear algebra
+\end_layout
+
+\begin_layout Standard
+And here's how you would set up a distributed matrix and do linear algebra
+ on it.
+\end_layout
+
+\begin_layout Subsection
+Running on the Biostat cluster
+\end_layout
+
+\begin_layout Standard
+Here's how you would run distributed R jobs based on mpirun on the Biostat
+ cluster
+\end_layout
+
+\begin_layout Standard
+HERE HERE HERE
 \end_layout
 
 \begin_layout Section
@@ -2159,10 +2236,6 @@ node002
 \emph default
 , ..., which are the internal names of the nodes in the cluster that Starcluster
  has set.
-\end_layout
-
-\begin_layout Standard
-Show them Rmpi/pbdR/doMPI startup using mpirun
 \end_layout
 
 \begin_layout Section
