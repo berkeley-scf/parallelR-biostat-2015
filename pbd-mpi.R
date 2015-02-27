@@ -6,7 +6,7 @@ init()
 
 myRank <- comm.rank () # comm index starts at 0 , not 1
 comm.print(myRank , all.rank=TRUE)
-node <- system("echo $HOSTNAME", intern = TRUE) # Sys.getenv("HOSTNAME")
+node <- system("cat /etc/hostname", intern = TRUE) # Sys.getenv("HOSTNAME")
 if(myRank == 0) {
     comm.print(paste0("hello, world from ", myRank, " ", node), all.rank=TRUE)
 } else comm.print(paste0("goodbye from ", myRank, " ", node), all.rank=TRUE)
