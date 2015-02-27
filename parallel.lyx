@@ -1296,13 +1296,13 @@ mpirun
 \begin_layout Standard
 
 \family typewriter
-mpirun -machinefile .hosts -np 1 R CMD BATCH --no-save file.R file.out
+mpirun -machinefile .hosts -np 4 R CMD BATCH --no-save file.R file.out
 \end_layout
 
 \begin_layout Standard
 
 \family typewriter
-mpirun -machinefile .hosts -np 1 R --no-save
+mpirun -machinefile .hosts -np 4 R --no-save
 \end_layout
 
 \begin_layout Standard
@@ -1320,25 +1320,9 @@ foreach
 startMPIcluster()
 \emph default
  with no arguments, it will start up one fewer worker processes than the
- number of hosts listed in 
-\family typewriter
-.hosts
-\family default
-, so your R code will be more portable.
- The reason for the 
-\family typewriter
--np 1
-\family default
- flag in the 
-\emph on
-mpirun
-\emph default
- invocation is that the worker processes are started within the R code rather
- than by 
-\emph on
-mpirun
-\emph default
-.
+ value indicated by the np flag, so your R code will be more portable.
+ Also you can leave off the -np and mpirun will start up as many processes
+ as there are lines in the .hosts file.
 \end_layout
 
 \begin_layout Chunk
@@ -1352,7 +1336,10 @@ mpirun
 \end_layout
 
 \begin_layout Standard
-[manually on a network with multiple servers - demo on AWS cluster]
+
+Note that in the past the above would work with -np 1 as well.
+ I'm in the process of investigating this.
+ 
 \end_layout
 
 \begin_layout Subsubsection
@@ -1502,6 +1489,10 @@ Using Rmpi to write code for distributed computation
 \end_layout
 
 \begin_layout Standard
+Rmp
+\end_layout
+
+\begin_layout Standard
 R users can use 
 \emph on
 Rmpi
@@ -1513,6 +1504,8 @@ Rmpi
 \emph default
 , you can simply start R as you normally do by invoking a command-line R
  session or using R CMD BATCH.
+ To use Rmpi across multiple nodes you'll need to invoke R with mpirun as
+ in the example of foreach with doMPI on multiple nodes above.
 \end_layout
 
 \begin_layout Standard
@@ -1524,8 +1517,7 @@ Rmpi
 \emph on
 foreach
 \emph default
- with Rmpi as the back-end, which we'll see in a moment), which is very
- similar to the MPI C syntax we've already seen.
+ with Rmpi as the back-end).
  This code runs in a master-slave paradigm where the master starts the slaves
  and invokes commands on them.
  It may be possible to run 
@@ -1534,7 +1526,19 @@ Rmpi
 \emph default
  in a context where each process runs the same code based on invoking with
  Rmpi, but I haven't investigated this further.
- 
+\end_layout
+
+\begin_layout Standard
+To start your R job do the following.
+ Here one requests just a single process, as R will manage the task of spawning
+ slaves.
+\end_layout
+
+\begin_layout Standard
+mpirun -machinefile .hosts -np 1 R CMD BATCH --no-save file.R file.Rout
+\end_layout
+
+\begin_layout Standard
 \begin_inset Note Note
 status open
 
@@ -1556,6 +1560,17 @@ status open
 \begin_layout Chunk
 
 @
+\end_layout
+
+\begin_layout Standard
+CAUTION: for some reason this syntax is not distributing workers to the
+ other nodes listed in the hosts file.
+ This has worked in the past for me, so I'm not sure what is going on, but
+ it may be a difference in the MPI version or something in the latest Ubuntu
+ (Ubuntu 14 vs.
+ Ubuntu 12).
+ Given this, you may want to use pbdR, which provides a similar ability
+ to make MPI calls.
 \end_layout
 
 \begin_layout Standard
@@ -1600,27 +1615,10 @@ Using pbdR for distributed computation
 \end_layout
 
 \begin_layout Standard
-[first install pbdR]
-\end_layout
-
-\begin_layout Standard
-[1] distributed linear algebra
-\end_layout
-
-\begin_layout Standard
-[2] parallel style apply
-\end_layout
-
-\begin_layout Standard
-[3] interfacing with MPI
-\end_layout
-
-\begin_layout Standard
 There is a relatively new effort to enhance R's capability for distributed
  memory processing called pbdR.
  pbdR is designed for SPMD processing in batch mode.
- I haven't had time to pull together any example code, but pbdR provides
- the following capabilities:
+ pbdR provides the following capabilities:
 \end_layout
 
 \begin_layout Itemize
@@ -1639,6 +1637,27 @@ the ability to do distributed linear algebra by interfacing to ScaLapack
 Personally, I think the last of the three is the most exciting as its a
  functionality not readily available in R or even more generally in other
  readily-accessible software.
+\end_layout
+
+\begin_layout Standard
+pbdR is installed on the nodes in our EC2 cluster, as detailed in Section
+ X.
+\end_layout
+
+\begin_layout Standard
+Let's see some basic examples of using pbdR.
+\end_layout
+
+\begin_layout Paragraph
+Interfacing with MPI
+\end_layout
+
+\begin_layout Paragraph
+Parallel apply
+\end_layout
+
+\begin_layout Paragraph
+Distributed linear algebra
 \end_layout
 
 \begin_layout Section
