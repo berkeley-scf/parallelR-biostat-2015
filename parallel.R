@@ -77,12 +77,12 @@ cl <- makeCluster(nCores) # by default this uses the PSOCK
 # clusterExport(cl, c('x', 'y')) # if the processes need objects 
 #   (x and y, here) from the master's workspace
 system.time(
-	res <- parSapply(cl, input, testFun)
+	res <- parSapply(cl, input, testFun) # or parLapply()
 )
 system.time(
 	res2 <- sapply(input, testFun)
 )
-res <- parLapply(cl, input, testFun)
+
 
 
 
@@ -123,7 +123,6 @@ print(unlist(results))
 
 closeCluster(cl)
 
-mpi.quit()
 
 ## @knitr Rmpi-foreach-multipleNodes
 

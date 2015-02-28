@@ -121,42 +121,34 @@ options(replace.assign=TRUE, width=55)
 \end_layout
 
 \begin_layout Chunk
-
 <<read-chunk, echo=FALSE>>= 
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('parallel.R')
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('parallel.sh')
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('starcluster.sh')
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('pbd-mpi.R')
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('pbd-apply.R')
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('pbd-linalg.R')
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -167,6 +159,16 @@ How to follow and try out this material
 \begin_layout Standard
 Note that my examples here will be silly toy examples for the purpose of
  keeping things simple and focused on the parallelization approaches.
+ The demo code embedded in this document is available in the various .R and
+ .sh files in the Github repository, 
+\begin_inset CommandInset href
+LatexCommand href
+target "https://github.com/berkeley-scf/parallelR-biostat-2015"
+
+\end_inset
+
+.
+ This document was created using Sweave.
 \end_layout
 
 \begin_layout Standard
@@ -655,12 +657,10 @@ Here's some code that when run in an R executable linked to a threaded BLAS
 \end_layout
 
 \begin_layout Chunk
-
 <<RlinAlg, cache=TRUE, eval=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -681,31 +681,27 @@ The R installation manual gives information on how to link R to a fast BLAS.
 \end_layout
 
 \begin_layout Chunk
-
 <<etc-alternatives, eval=FALSE, engine='bash'>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
 \begin_layout Standard
-To use a fast, threaded BLAS enabled on your own Mac, do the following:
+To use a fast, threaded BLAS enabled on your own Mac, do the following as
+ the administrative user:
 \end_layout
 
 \begin_layout Chunk
-
 <<MacBLAS, eval=FALSE, engine='bash'>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
 \begin_layout Standard
-
 You should be able to use OMP_NUM_THREADS to control the number of threads
  used for linear algebra on the Biostat cluster.
  
@@ -928,12 +924,10 @@ top
 \end_layout
 
 \begin_layout Chunk
-
 <<foreach, eval=FALSE, tidy=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1029,16 +1023,14 @@ ed packages on CRAN.
 \end_layout
 
 \begin_layout Standard
-First let's consider parallel apply.
+Here are examples of some of the parallel apply-style commands.
 \end_layout
 
 \begin_layout Chunk
-
 <<parallelApply, eval=TRUE, tidy=FALSE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1089,12 +1081,10 @@ parallel
 \end_layout
 
 \begin_layout Chunk
-
 <<mcparallel, eval=TRUE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1159,7 +1149,7 @@ You can make use of the UNIX environment variable NSLOTS in your code to
 \begin_layout Standard
 
 \family typewriter
-ncores <- Sys.getenv('NSLOTS')
+nCores <- Sys.getenv('NSLOTS')
 \end_layout
 
 \begin_layout Section
@@ -1238,12 +1228,10 @@ foreach
 \end_layout
 
 \begin_layout Chunk
-
-<<Rmpi-foreach-oneNode, eval=FALSE, cache=TRUE>>=
+<<Rmpi-foreach-oneNode, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1312,7 +1300,11 @@ mpirun
 \end_layout
 
 \begin_layout Standard
-A caution concerning Rmpi/doMPI: when you invoke 
+A caution concerning 
+\emph on
+Rmpi/doMPI
+\emph default
+: when you invoke 
 \emph on
 startMPIcluster()
 \emph default
@@ -1325,7 +1317,11 @@ foreach
  is actually running, the master process also becomes 100% active.
  So using this functionality involves some inefficiency in CPU usage.
  This inefficiency is not seen with a sockets cluster (see next) nor when
- using other Rmpi functionality - i.e., starting slaves with 
+ using other 
+\emph on
+Rmpi
+\emph default
+ functionality - i.e., starting slaves with 
 \emph on
 mpi.spawn.Rslaves()
 \emph default
@@ -1337,11 +1333,26 @@ foreach in R on multiple nodes
 \end_layout
 
 \begin_layout Standard
+[Note that at this point in the demo, we'll switch to use of a BCE-based
+ EC2 virtual cluster, as we need access to multiple nodes.]
+\end_layout
+
+\begin_layout Standard
 For this, we need to start R through the 
 \emph on
 mpirun
 \emph default
  command so that inter-node communication is handled by MPI.
+ The 
+\family typewriter
+-machinefile
+\family default
+ tells MPI what machines (nodes) to use for the computation.
+ When running on the Biostat cluster you don't need 
+\family typewriter
+-machinefile .hosts
+\family default
+.
 \end_layout
 
 \begin_layout Standard
@@ -1377,17 +1388,14 @@ startMPIcluster()
 \end_layout
 
 \begin_layout Chunk
-
 <<Rmpi-foreach-multipleNodes, eval=FALSE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
 \begin_layout Standard
-
 Note that the above should work with -np 1 as well (and does on the biostat
  cluster).
  However -np 1 does not work in the Amazon cluster nor the SCF (though it
@@ -1412,12 +1420,10 @@ makeCluster()
 \end_layout
 
 \begin_layout Chunk
-
 <<sockets-multipleNodes, eval=FALSE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1605,12 +1611,10 @@ status open
 \end_layout
 
 \begin_layout Chunk
-
 <<Rmpi-usingMPIsyntax, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1745,12 +1749,10 @@ Here's an example of distributing an embarrassingly parallel calculation
 \end_layout
 
 \begin_layout Chunk
-
 <<pbd-mpi, cache=TRUE, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1767,12 +1769,10 @@ apply()
 \end_layout
 
 \begin_layout Chunk
-
 <<pbd-apply, cache=TRUE, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1789,12 +1789,10 @@ And here's how you would set up a distributed matrix and do linear algebra
 \end_layout
 
 \begin_layout Chunk
-
 <<pbd-linalg, cache=TRUE, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1941,48 +1939,6 @@ end{verbatim}
 \end_layout
 
 \begin_layout Standard
-[show Aaron's approach]
-\end_layout
-
-\begin_layout Standard
-Once you've logged into the instance, copy the files modify-for-aws.sh and
- add-parallel-tools.sh to the instance and run them:
-\end_layout
-
-\begin_layout Standard
-\begin_inset ERT
-status open
-
-\begin_layout Plain Layout
-
-
-\backslash
-begin{verbatim}
-\end_layout
-
-\begin_layout Plain Layout
-
-bash modify-for-aws.sh
-\end_layout
-
-\begin_layout Plain Layout
-
-bash add-parallel-tools.sh
-\end_layout
-
-\begin_layout Plain Layout
-
-
-\backslash
-end{verbatim}
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
 Now you can logon to the instance as the oski user (or just do 
 \begin_inset Quotes eld
 \end_inset
@@ -1996,8 +1952,8 @@ su - oski
 
 \begin_layout Standard
 Once you are logged in to the VM, running parallel R jobs on a single node
- should be exactly the same as we've already seen on a BCE VM running on
- your laptop.
+ should be exactly the same as we've already seen on the BCE VM running
+ on your laptop.
 \end_layout
 
 \begin_layout Paragraph
@@ -2051,12 +2007,10 @@ config
 \end_layout
 
 \begin_layout Chunk
-
 <<starcluster-start, eval=FALSE, engine='bash'>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2558,12 +2512,10 @@ parSapply()
 \end_layout
 
 \begin_layout Chunk
-
 <<RNG-apply, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2577,12 +2529,10 @@ nextRNGStream()
 \end_layout
 
 \begin_layout Chunk
-
 <<RNGstream, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2608,12 +2558,10 @@ RNGkind("L'Ecuyer-CMRG")
 \end_layout
 
 \begin_layout Chunk
-
 <<RNG-mclapply, eval=FALSE, tidy=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2733,12 +2681,10 @@ seed
 \end_layout
 
 \begin_layout Chunk
-
 <<RNG-doMPI, eval=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2799,12 +2745,10 @@ foreach
 \end_layout
 
 \begin_layout Chunk
-
 <<RNG-doRNG>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2813,12 +2757,10 @@ Alternatively, you can do:
 \end_layout
 
 \begin_layout Chunk
-
 <<RNG-doRNG2>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
