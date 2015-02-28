@@ -1,5 +1,6 @@
 ## @knitr RlinAlg
 
+# install.packages('RhpcBLASctl')
 require(RhpcBLASctl)
 # I use RhpcBLASctl to control threading for purpose of demo
 # but one can also set OMP_NUM_THREADS in the shell before invoking R
@@ -34,7 +35,7 @@ registerDoParallel(nCores)
 # registerDoMC(nCores) # alternative to registerDoParallel
 # cl <- startMPIcluster(nCores); registerDoMPI(cl) # when using Rmpi as the back-end
 
-out <- foreach(i = 1:100) %dopar% {
+out <- foreach(i = 1:40) %dopar% {
 	cat('Starting ', i, 'th job.\n', sep = '')
 	outSub <- taskFun()
 	cat('Finishing ', i, 'th job.\n', sep = '')
@@ -46,9 +47,19 @@ out <- foreach(i = 1:100) %dopar% {
 require(parallel)
 nCores <- 2
 
+nSims <- 60
+input <- seq_len(nSims) # same as 1:nSims but more robust
+
+
+testFun <- function(i){
+	mn <- mean(rnorm(1000000))
+	return(mn)
+}
+
 ################################
 # using forking (mclapply)
 ################################
+
 
 system.time(
 	res <- mclapply(input, testFun, mc.cores = nCores) 
@@ -62,12 +73,7 @@ system.time(
 cl <- makeCluster(nCores) # by default this uses the PSOCK 
 #  mechanism as in the SNOW package - starting new jobs via Rscript 
 #  and communicating via sockets
-nSims <- 60
-input <- seq_len(nSims) # same as 1:nSims but more robust
-testFun <- function(i){
-	mn <- mean(rnorm(1000000))
-	return(mn)
-}
+
 # clusterExport(cl, c('x', 'y')) # if the processes need objects 
 #   (x and y, here) from the master's workspace
 system.time(
