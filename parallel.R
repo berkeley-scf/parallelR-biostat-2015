@@ -107,11 +107,13 @@ cl = startMPIcluster(nCores)
 registerDoMPI(cl)
 clusterSize(cl) # just to check
 
-nIts <- 200
+nIts <- 20
 
 results <- foreach(i = 1:nIts) %dopar% {
   out = mean(rnorm(1e7))
 }
+
+print(unlist(results))
 
 closeCluster(cl)
 
@@ -119,8 +121,6 @@ mpi.quit()
 
 ## @knitr Rmpi-foreach-multipleNodes
 
-## invoke R as:
-## mpirun -machinefile .hosts -np 1 R CMD BATCH --no-save file.R file.out
 
 library(Rmpi)
 library(doMPI)
@@ -132,7 +132,7 @@ cl = startMPIcluster()  # by default will start one fewer slave
 registerDoMPI(cl)
 clusterSize(cl) # just to check
 
-nIts <- 200
+nIts <- 20
 
 results <- foreach(i = 1:nIts) %dopar% {
   out = mean(rnorm(1e7))

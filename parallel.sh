@@ -4,14 +4,14 @@
 
 R_VERSION=3.1
 
-cd /Library/Frameworks/R.framework/Versions/3.1/${R_VERSION}/lib
-cp libRblas.dylib libRblas.dylib.backup
-ln -s /System/Library/Frameworks/Accelerate.framework/Versions/\
+cd /Library/Frameworks/R.framework/Versions/${R_VERSION}/Resources/lib
+sudo cp libRblas.dylib libRblas.dylib.backup
+sudo ln -s /System/Library/Frameworks/Accelerate.framework/Versions/\
 Current/Frameworks/vecLib.framework/Versions/Current/libBLAS.dylib
 
 ## @knitr etc-alternatives
 
-# to install openBLAS
+# to install openBLAS in Ubuntu
 sudo apt-get install -y libopenblas-base
 
 ls -l /usr/lib/libblas.so

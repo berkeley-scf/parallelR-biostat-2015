@@ -188,13 +188,12 @@ target "bce.berkeley.edu"
  You can run this on your laptop (see 
 \begin_inset CommandInset href
 LatexCommand href
-name "BCE Virtual Machine"
+name "the BCE installation instructions"
 target "bce.berkeley.edu/install.html"
 
 \end_inset
 
- for installation instructions), and I encourage you to do so to follow
- along.
+), and I encourage you to do so to follow along.
  Note: to allow for parallelization, before starting the BCE VM, go to Machine
  > Settings, select System and increase the number of processors.
 \end_layout
@@ -313,15 +312,15 @@ For shared memory parallelism, each core is accessing the same memory so
 \end_layout
 
 \begin_layout Standard
-Some of the shared memory parallelism approaches that we'll cover are:
+The shared memory parallelism approaches that we'll cover are:
 \end_layout
 
 \begin_layout Enumerate
-threaded linear algebra 
+threaded linear algebra and 
 \end_layout
 
 \begin_layout Enumerate
-simple parallelization of embarrassingly parallel computations
+simple parallelization of embarrassingly parallel computations.
 \end_layout
 
 \begin_layout Paragraph*
@@ -343,47 +342,6 @@ top
  However, you can also explicitly control the number of threads available
  to a process.
  
-\end_layout
-
-\begin_layout Standard
-For most threaded code (that based on the openMP protocol), the number of
- threads can be set by setting the OMP_NUM_THREADS environment variable
- (VECLIB_MAXIMUM THREADS on a Mac).
- E.g., to set it for four threads in bash:
-\end_layout
-
-\begin_layout Standard
-
-\family typewriter
-export OMP_NUM_THREADS=4
-\end_layout
-
-\begin_layout Standard
-Matlab is an exception to this.
- Threading in Matlab can be controlled in two ways.
- From within your Matlab code you can set the number of threads, e.g., to
- four in this case:
-\end_layout
-
-\begin_layout Standard
-
-\family typewriter
-feature('numThreads', 4)
-\end_layout
-
-\begin_layout Standard
-To use only a single thread, you can use 1 instead of 4 above, or you can
- start Matlab with the 
-\emph on
-singleCompThread
-\emph default
- flag:
-\end_layout
-
-\begin_layout Standard
-
-\family typewriter
-matlab -singleCompThread ...
 \end_layout
 
 \begin_layout Subsection
@@ -416,11 +374,15 @@ Some of the distributed memory approaches that we'll cover are:
 \end_layout
 
 \begin_layout Enumerate
-simple parallelization of embarrassingly parallel computations
+simple parallelization of embarrassingly parallel computations,
 \end_layout
 
 \begin_layout Enumerate
-using MPI for explicit distributed memory processing
+using MPI for explicit distributed memory processing, and
+\end_layout
+
+\begin_layout Enumerate
+distributed linear algebra.
 \end_layout
 
 \begin_layout Subsection
@@ -491,6 +453,27 @@ The easiest situation is when your code is embarrassingly parallel, which
  Much of the material here is focused on embarrassingly parallel computation.
 \end_layout
 
+\begin_layout Standard
+The following are some basic principles/suggestions for how to parallelize
+ your computation.
+\end_layout
+
+\begin_layout Itemize
+If you can do your computation on the cores of a single node using shared
+ memory, that will be faster than using the same number of cores (or even
+ somewhat more cores) across multiple nodes.
+ Similarly, jobs with a lot of data/high memory requirements that one might
+ think of as requiring Hadoop may in some cases be much faster if you can
+ find a single machine with a lot of memory.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+That said, if you would run out of memory on a single node, then you'll
+ need to use distributed memory.
+\end_layout
+
+\end_deeper
 \begin_layout Itemize
 If you have nested loops, you generally only want to parallelize at one
  level of the code.
@@ -528,6 +511,9 @@ If you have very many tasks and each one takes little time, the communication
 \begin_layout Standard
 I'm happy to help discuss specific circumstances, so just email consult@stat.berk
 eley.edu.
+ The new Berkeley Research Computing (BRC) initiative is also providing
+ consulting on efficient parallelization strategies.
+ If my expertise is not sufficient, I can help you get assistance from BRC.
 \end_layout
 
 \begin_layout Paragraph
@@ -680,7 +666,7 @@ Here's some code that when run in an R executable linked to a threaded BLAS
 
 \begin_layout Standard
 The R installation manual gives information on how to link R to a fast BLAS.
- On Ubuntu, if you install openBLAS as follows, the 
+ On Ubuntu Linux, if you install openBLAS as follows, the 
 \emph on
 /etc/alternatives
 \emph default
@@ -716,6 +702,13 @@ To use a fast, threaded BLAS enabled on your own Mac, do the following:
 \begin_layout Chunk
 
 @
+\end_layout
+
+\begin_layout Standard
+
+You should be able to use OMP_NUM_THREADS to control the number of threads
+ used for linear algebra on the Biostat cluster.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -1132,11 +1125,41 @@ Running on the Biostat cluster
 
 \begin_layout Standard
 Here's how you would submit an R job that uses shared memory on a single
- node:
+ node (in this case requesting four cores of a maximum of 8 on a given core):
 \end_layout
 
 \begin_layout Standard
-BLAH
+
+\family typewriter
+qsub -pe smp 4 job.sh
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+job.sh
+\emph default
+ would have the various lines starting with #$ as in the biostat cluster
+ documentation and your R command would look like:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+R CMD BATCH file.R file.out
+\end_layout
+
+\begin_layout Standard
+You can make use of the UNIX environment variable NSLOTS in your code to
+ programmatically control the number of the number of cores your code uses
+ (e.g., with foreach, mclapply, parLapply, etc.).
+ To read this variable in R do:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+ncores <- Sys.getenv('NSLOTS')
 \end_layout
 
 \begin_layout Section
@@ -1365,7 +1388,10 @@ startMPIcluster()
 
 \begin_layout Standard
 
-Note that in the past the above would work with -np 1 as well.
+Note that the above should work with -np 1 as well (and does on the biostat
+ cluster).
+ However -np 1 does not work in the Amazon cluster nor the SCF (though it
+ has in the past).
  I'm in the process of investigating this.
  
 \end_layout
@@ -1387,7 +1413,7 @@ makeCluster()
 
 \begin_layout Chunk
 
-<<sockets-multipleNodes, cache=TRUE>>=
+<<sockets-multipleNodes, eval=FALSE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
@@ -1559,6 +1585,8 @@ To start your R job do the following.
 \end_layout
 
 \begin_layout Standard
+
+\family typewriter
 mpirun -machinefile .hosts -np 1 R CMD BATCH --no-save file.R file.Rout
 \end_layout
 
@@ -1588,13 +1616,13 @@ status open
 
 \begin_layout Standard
 CAUTION: for some reason this syntax is not distributing workers to the
- other nodes listed in the hosts file.
+ other nodes listed in the hosts file on the Amazon cluster and the SCF,
+ but it should work on the Biostat cluster.
  This has worked in the past for me, so I'm not sure what is going on, but
  it may be a difference in the MPI version or something in the latest Ubuntu
  (Ubuntu 14 vs.
  Ubuntu 12).
- Given this, you may want to use pbdR, which provides a similar ability
- to make MPI calls.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -1635,14 +1663,30 @@ mpi.comm.size()
 \end_layout
 
 \begin_layout Subsubsection
-Using pbdR for distributed computation
+Using 
+\emph on
+pbdR
+\emph default
+ for distributed computation
 \end_layout
 
 \begin_layout Standard
 There is a relatively new effort to enhance R's capability for distributed
- memory processing called pbdR.
- pbdR is designed for SPMD processing in batch mode.
- pbdR provides the following capabilities:
+ memory processing called 
+\emph on
+pbdR
+\emph default
+.
+ 
+\emph on
+pbdR
+\emph default
+ is designed for SPMD processing in batch mode.
+ 
+\emph on
+pbdR
+\emph default
+ provides the following capabilities:
 \end_layout
 
 \begin_layout Itemize
@@ -1664,12 +1708,26 @@ Personally, I think the last of the three is the most exciting as its a
 \end_layout
 
 \begin_layout Standard
-pbdR is installed on the nodes in our EC2 cluster, as detailed in Section
+
+\emph on
+pbdR
+\emph default
+ is installed on the nodes in our example EC2 cluster, as detailed in Section
  X.
 \end_layout
 
 \begin_layout Standard
 Let's see some basic examples of using pbdR.
+\end_layout
+
+\begin_layout Standard
+One starts pbdR via mpirun as follows:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+mpirun -machinefile .hosts -np 4 Rscript file.R > file.out
 \end_layout
 
 \begin_layout Paragraph
@@ -1688,7 +1746,7 @@ Here's an example of distributing an embarrassingly parallel calculation
 
 \begin_layout Chunk
 
-<<pbd-mpi, cache=TRUE>>=
+<<pbd-mpi, cache=TRUE, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
@@ -1701,13 +1759,16 @@ Parallel apply
 \end_layout
 
 \begin_layout Standard
-Here's some basic syntax for doing a distributed apply() on a matrix that
- is on one of the workers (i.e., the matrix is not distributed).
+Here's some basic syntax for doing a distributed 
+\emph on
+apply()
+\emph default
+ on a matrix that is on one of the workers (i.e., the matrix is not distributed).
 \end_layout
 
 \begin_layout Chunk
 
-<<pbd-mpi, cache=TRUE>>=
+<<pbd-apply, cache=TRUE, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
@@ -1722,6 +1783,19 @@ Distributed linear algebra
 \begin_layout Standard
 And here's how you would set up a distributed matrix and do linear algebra
  on it.
+ Note that when working with large matrices, you would generally want to
+ construct the matrices (or read from disk) in a parallel fashion rather
+ than creating the full matrix on one worker.
+\end_layout
+
+\begin_layout Chunk
+
+<<pbd-linalg, cache=TRUE, eval=FALSE>>=
+\end_layout
+
+\begin_layout Chunk
+
+@
 \end_layout
 
 \begin_layout Subsection
@@ -1730,23 +1804,39 @@ Running on the Biostat cluster
 
 \begin_layout Standard
 Here's how you would run distributed R jobs based on mpirun on the Biostat
- cluster
+ cluster 
 \end_layout
 
 \begin_layout Standard
-HERE HERE HERE
-\end_layout
 
-\begin_layout Section
-Running Parallel R Jobs on the Biostat Cluster
-\end_layout
-
-\begin_layout Standard
-basic foreach example
+\family typewriter
+qsub -pe orte 12 job.sh
 \end_layout
 
 \begin_layout Standard
-doMPI example
+job.sh would have the various lines starting with #$ as in the biostat cluster
+ documentation.
+\end_layout
+
+\begin_layout Standard
+For Rmpi/doMPI your R command would look like this, where R will start the
+ worker processes (hence the -np 1)
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+mpirun -np 1 R CMD BATCH file.R file.out
+\end_layout
+
+\begin_layout Standard
+or for pbdR where mpirun starts the workers in SPMD fashion:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+mpirun -np 12 Rscript file.R > file.out
 \end_layout
 
 \begin_layout Section
@@ -2240,6 +2330,98 @@ node002
 
 \begin_layout Section
 Efficiency and Profiling
+\end_layout
+
+\begin_layout Subsection
+General tips on efficient R code
+\end_layout
+
+\begin_layout Standard
+See 
+\begin_inset CommandInset href
+LatexCommand href
+name "Section 1 of Unit 6 from Statistics 243"
+target "https://github.com/berkeley-stat243/stat243-fall-2014/blob/master/units/unit6-Rprog.pdf?raw=true"
+
+\end_inset
+
+ on efficient R code.
+\end_layout
+
+\begin_layout Standard
+Here are a few high-level principles:
+\end_layout
+
+\begin_layout Enumerate
+Write vectorized code, not for loops or apply-style statements.
+\end_layout
+
+\begin_layout Enumerate
+Pre-allocate storage rather than allocating into a position in a vector
+ or list that is beyond the length of that vector/list.
+\end_layout
+
+\begin_layout Enumerate
+Make sure R is linked to a fast BLAS.
+\end_layout
+
+\begin_layout Enumerate
+To get one or more values from a vector or list, use numeric indices rather
+ than looking up/subsetting by name or boolean values.
+\end_layout
+
+\begin_layout Subsection
+Benchmarking and profiling
+\end_layout
+
+\begin_layout Standard
+Again my class notes (see above link) provide more details on the topics
+ below.
+\end_layout
+
+\begin_layout Standard
+The system.time() function allows you to time R code.
+ The rbenchmark package provides a nice wrapper function, benchmark(), that
+ eases timing of code and comparison of timing of different code chunks.
+ 
+\end_layout
+
+\begin_layout Standard
+The Rprof() function allows you to see how much time is spent in different
+ parts of your code, helping to identify bottlenecks.
+ Rprof() works as follows.
+ At set time intervals, it queries the R process to see what function is
+ being evaluated and writes this info to disk.
+ Then when the code is finished you can call summaryRprof() to collect those
+ statistics.
+ Note that if your code runs very quickly, you may not get enough queries
+ accumulated to have useful information.
+ See the 'interval' argument to Rprof.
+ In this case you may be able to write a loop that repeatedly evaluates
+ your code.
+ 
+\end_layout
+
+\begin_layout Standard
+I haven't used it, but Hadley Wickham's 
+\begin_inset CommandInset href
+LatexCommand href
+name "lineprof package"
+target "https://github.com/hadley/lineprof"
+
+\end_inset
+
+ provides a nice interface that allows you to see timing (as with Rprof())
+ but also memory use by lines of your code.
+ Some details are in 
+\begin_inset CommandInset href
+LatexCommand href
+name "his book"
+target "http://adv-r.had.co.nz/memory.html#memory-profiling"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Section
