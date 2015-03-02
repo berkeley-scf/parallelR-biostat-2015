@@ -1,26 +1,33 @@
+## @knitr Rmpi-usingMPIsyntax
+
+# example syntax of standard MPI functions
+
 library(Rmpi)
 nSlaves <- 3
 mpi.spawn.Rslaves(nslaves = nSlaves)
 
-n <- 2000
+n <- 5
 mpi.bcast.Robj2slave(n)
+mpi.bcast.cmd(id <- mpi.comm.rank())
+mpi.bcast.cmd(x <- rnorm(id))
 
-mpi.bcast.cmd(set.seed(mpi.comm.rank()))
-mpi.bcast.cmd(y <- crossprod(matrix(rnorm(n^2), n)))
+mpi.remote.exec(ls(.GlobalEnv), ret = TRUE)
 
-mpi.bcast.cmd(sumdiag <- sum(diag(y)))
-mpi.remote.exec(print(sumdiag))
+mpi.bcast.cmd(y <- 2 * x)
+mpi.remote.exec(print(y))
 
-mpi.remote.exec(mpi.send.Robj(sumdiag, dest = 0, tag = 1))
-results=list(); length(results) <- nSlaves
-for(i in 1:nSlaves)
-    results[[i]] = mpi.recv.Robj(source = i, tag = 1)
-    
+objs <- c('y', 'z')
+# next command sends value of objs on _master_ as argument to rm
+mpi.remote.exec(rm, objs)  
+mpi.remote.exec(print(z))
 
-# out <- mpi.gather.Robj(sumdiag) # not working
-mpi.close.Rslaves()
-
+# collect results back via send/recv
+mpi.remote.exec(mpi.send.Robj(x, dest = 0, tag = 1))
+results = list()
+for(i in 1:(mpi.comm.size()-1)){
+  results[[i]] = mpi.recv.Robj(source = i, tag = 1)
+}
+  
 print(results)
 
-# if started with mpirun, invoke:
-# mpi.exit()
+mpi.exit()

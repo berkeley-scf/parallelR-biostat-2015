@@ -137,6 +137,11 @@ read_chunk('doMPIexample.R')
 
 \begin_layout Chunk
 
+read_chunk('RmpiExample.R')
+\end_layout
+
+\begin_layout Chunk
+
 read_chunk('parallel.sh')
 \end_layout
 
@@ -1361,7 +1366,9 @@ foreach in R on multiple nodes
 
 \begin_layout Standard
 [Note that at this point in the demo, we'll switch to use of a BCE-based
- EC2 virtual cluster, as we need access to multiple nodes.]
+ EC2 virtual cluster, as we need access to multiple nodes.
+ Note to self - just do starcluster sshmaster -u oski mycluster from laptop
+ BCE.]
 \end_layout
 
 \begin_layout Standard
@@ -1426,10 +1433,16 @@ startMPIcluster()
 \end_layout
 
 \begin_layout Standard
-Note that the above should in general work with -np 1 as well (and does
- on the biostat cluster).
- However -np 1 does not work in the Amazon cluster nor the SCF (though it
- has in the past).
+Note that the above should in general work with 
+\family typewriter
+-np 1
+\family default
+ as well (and does on the biostat cluster).
+ However 
+\family typewriter
+-np 1
+\family default
+ does not work in the Amazon cluster nor the SCF (though it has in the past).
  I'm in the process of investigating this.
  
 \end_layout
@@ -1446,7 +1459,11 @@ One can also set up a cluster via sockets.
 makeCluster()
 \emph default
 .
- 
+ Here we can just start R as we normally would, without using 
+\emph on
+mpirun
+\emph default
+.
 \end_layout
 
 \begin_layout Chunk
@@ -1625,7 +1642,7 @@ To start your R job do the following.
 \begin_layout Standard
 
 \family typewriter
-mpirun -machinefile .hosts -np 1 R CMD BATCH --no-save file.R file.Rout
+mpirun -machinefile .hosts -np 1 R CMD BATCH --no-save RmpiExample.R file.Rout
 \end_layout
 
 \begin_layout Standard
