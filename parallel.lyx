@@ -1433,7 +1433,7 @@ startMPIcluster()
 \end_layout
 
 \begin_layout Standard
-Note that the above should in general work with 
+CAUTION: Note that the above should in general work with 
 \family typewriter
 -np 1
 \family default
@@ -1642,7 +1642,8 @@ To start your R job do the following.
 \begin_layout Standard
 
 \family typewriter
-mpirun -machinefile .hosts -np 1 R CMD BATCH --no-save RmpiExample.R file.Rout
+mpirun -machinefile .hosts -np 1 R CMD BATCH --no-save RmpiExample.R RmpiExample.Ro
+ut
 \end_layout
 
 \begin_layout Standard

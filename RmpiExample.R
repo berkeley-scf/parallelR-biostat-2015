@@ -30,4 +30,5 @@ for(i in 1:(mpi.comm.size()-1)){
   
 print(results)
 
+mpi.close.Rslaves()
 mpi.exit()
