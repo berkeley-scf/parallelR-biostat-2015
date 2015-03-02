@@ -1,4 +1,4 @@
-## @knitr pbd-mpi
+## @knitr pbd-apply
 
 
 library(pbdMPI, quiet = TRUE )

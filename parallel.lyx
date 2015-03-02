@@ -121,34 +121,47 @@ options(replace.assign=TRUE, width=55)
 \end_layout
 
 \begin_layout Chunk
+
 <<read-chunk, echo=FALSE>>= 
 \end_layout
 
 \begin_layout Chunk
+
 read_chunk('parallel.R')
 \end_layout
 
 \begin_layout Chunk
+
+read_chunk('doMPIexample.R')
+\end_layout
+
+\begin_layout Chunk
+
 read_chunk('parallel.sh')
 \end_layout
 
 \begin_layout Chunk
+
 read_chunk('starcluster.sh')
 \end_layout
 
 \begin_layout Chunk
+
 read_chunk('pbd-mpi.R')
 \end_layout
 
 \begin_layout Chunk
+
 read_chunk('pbd-apply.R')
 \end_layout
 
 \begin_layout Chunk
+
 read_chunk('pbd-linalg.R')
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -657,10 +670,12 @@ Here's some code that when run in an R executable linked to a threaded BLAS
 \end_layout
 
 \begin_layout Chunk
+
 <<RlinAlg, cache=TRUE, eval=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -681,10 +696,12 @@ The R installation manual gives information on how to link R to a fast BLAS.
 \end_layout
 
 \begin_layout Chunk
+
 <<etc-alternatives, eval=FALSE, engine='bash'>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -694,10 +711,12 @@ To use a fast, threaded BLAS enabled on your own Mac, do the following as
 \end_layout
 
 \begin_layout Chunk
+
 <<MacBLAS, eval=FALSE, engine='bash'>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -924,10 +943,12 @@ top
 \end_layout
 
 \begin_layout Chunk
+
 <<foreach, eval=FALSE, tidy=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -1027,10 +1048,12 @@ Here are examples of some of the parallel apply-style commands.
 \end_layout
 
 \begin_layout Chunk
+
 <<parallelApply, eval=TRUE, tidy=FALSE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -1081,10 +1104,12 @@ parallel
 \end_layout
 
 \begin_layout Chunk
+
 <<mcparallel, eval=TRUE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -1228,10 +1253,12 @@ foreach
 \end_layout
 
 \begin_layout Chunk
+
 <<Rmpi-foreach-oneNode, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -1347,7 +1374,7 @@ mpirun
 \family typewriter
 -machinefile
 \family default
- tells MPI what machines (nodes) to use for the computation.
+ argument tells MPI what machines (nodes) to use for the computation.
  When running on the Biostat cluster you don't need 
 \family typewriter
 -machinefile .hosts
@@ -1358,7 +1385,8 @@ mpirun
 \begin_layout Standard
 
 \family typewriter
-mpirun -machinefile .hosts -np 4 R CMD BATCH --no-save file.R file.out
+mpirun -machinefile .hosts -np 4 R CMD BATCH --no-save doMPIexample.R doMPIexample.
+Rout
 \end_layout
 
 \begin_layout Standard
@@ -1388,16 +1416,18 @@ startMPIcluster()
 \end_layout
 
 \begin_layout Chunk
+
 <<Rmpi-foreach-multipleNodes, eval=FALSE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
 \begin_layout Standard
-Note that the above should work with -np 1 as well (and does on the biostat
- cluster).
+Note that the above should in general work with -np 1 as well (and does
+ on the biostat cluster).
  However -np 1 does not work in the Amazon cluster nor the SCF (though it
  has in the past).
  I'm in the process of investigating this.
@@ -1420,10 +1450,12 @@ makeCluster()
 \end_layout
 
 \begin_layout Chunk
+
 <<sockets-multipleNodes, eval=FALSE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -1611,10 +1643,12 @@ status open
 \end_layout
 
 \begin_layout Chunk
+
 <<Rmpi-usingMPIsyntax, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -1717,7 +1751,14 @@ Personally, I think the last of the three is the most exciting as its a
 pbdR
 \emph default
  is installed on the nodes in our example EC2 cluster, as detailed in Section
- X.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Starting-a-Cluster"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -1749,10 +1790,12 @@ Here's an example of distributing an embarrassingly parallel calculation
 \end_layout
 
 \begin_layout Chunk
+
 <<pbd-mpi, cache=TRUE, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -1769,10 +1812,12 @@ apply()
 \end_layout
 
 \begin_layout Chunk
+
 <<pbd-apply, cache=TRUE, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -1789,10 +1834,12 @@ And here's how you would set up a distributed matrix and do linear algebra
 \end_layout
 
 \begin_layout Chunk
+
 <<pbd-linalg, cache=TRUE, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -1967,6 +2014,13 @@ Aaron Culich of Berkeley Research Computing recommends the following scripted
 
 \begin_layout Subsection
 Starting a Cluster of EC2 Instances
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Starting-a-Cluster"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -2007,10 +2061,12 @@ config
 \end_layout
 
 \begin_layout Chunk
+
 <<starcluster-start, eval=FALSE, engine='bash'>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -2278,8 +2334,8 @@ node001
 \emph on
 node002
 \emph default
-, ..., which are the internal names of the nodes in the cluster that Starcluster
- has set.
+, ..., which are the internal names of the nodes (as named by Starcluster)
+ in the cluster.
 \end_layout
 
 \begin_layout Section
@@ -2512,10 +2568,12 @@ parSapply()
 \end_layout
 
 \begin_layout Chunk
+
 <<RNG-apply, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -2529,10 +2587,12 @@ nextRNGStream()
 \end_layout
 
 \begin_layout Chunk
+
 <<RNGstream, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -2558,10 +2618,12 @@ RNGkind("L'Ecuyer-CMRG")
 \end_layout
 
 \begin_layout Chunk
+
 <<RNG-mclapply, eval=FALSE, tidy=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -2681,10 +2743,12 @@ seed
 \end_layout
 
 \begin_layout Chunk
+
 <<RNG-doMPI, eval=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -2745,10 +2809,12 @@ foreach
 \end_layout
 
 \begin_layout Chunk
+
 <<RNG-doRNG>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
@@ -2757,10 +2823,12 @@ Alternatively, you can do:
 \end_layout
 
 \begin_layout Chunk
+
 <<RNG-doRNG2>>=
 \end_layout
 
 \begin_layout Chunk
+
 @
 \end_layout
 
