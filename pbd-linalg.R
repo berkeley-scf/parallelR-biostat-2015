@@ -1,12 +1,13 @@
 ## @knitr pbd-linalg
 
 library(pbdDMAT, quiet = TRUE )
-init()
 
 n <- 4096*2
 
-library(RhpcBLASctl)
-blas_set_num_threads(1)
+# if you are putting multiple processes on node
+# you may want to prevent threading of the linear algebra:
+# library(RhpcBLASctl)
+# blas_set_num_threads(1)
 
 init.grid()
 
