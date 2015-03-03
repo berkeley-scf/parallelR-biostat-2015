@@ -12,6 +12,7 @@ if(myRank == 0) {
 } else comm.print(paste0("goodbye from ", myRank, " ", node), all.rank=TRUE)
 
 if(comm.rank() == 0) print(date())
+set.seed(myRank)  # see Section 9 for more on parallel random number generation
 N.gbd <- 1e7
 X.gbd <- matrix ( runif ( N.gbd * 2) , ncol = 2)
 r.gbd <- sum ( rowSums ( X.gbd^2) <= 1)

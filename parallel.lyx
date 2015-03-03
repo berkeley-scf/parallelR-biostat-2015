@@ -121,52 +121,42 @@ options(replace.assign=TRUE, width=55)
 \end_layout
 
 \begin_layout Chunk
-
 <<read-chunk, echo=FALSE>>= 
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('parallel.R')
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('doMPIexample.R')
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('RmpiExample.R')
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('parallel.sh')
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('starcluster.sh')
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('pbd-mpi.R')
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('pbd-apply.R')
 \end_layout
 
 \begin_layout Chunk
-
 read_chunk('pbd-linalg.R')
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -683,12 +673,10 @@ Here's some code that when run in an R executable linked to a threaded BLAS
 \end_layout
 
 \begin_layout Chunk
-
 <<RlinAlg, cache=TRUE, eval=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -729,12 +717,10 @@ target "http://cran.r-project.org/manuals.html"
 \end_layout
 
 \begin_layout Chunk
-
 <<etc-alternatives, eval=FALSE, engine='bash'>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -744,12 +730,10 @@ To use a fast, threaded BLAS enabled on your own Mac, do the following as
 \end_layout
 
 \begin_layout Chunk
-
 <<MacBLAS, eval=FALSE, engine='bash'>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -971,12 +955,10 @@ top
 \end_layout
 
 \begin_layout Chunk
-
 <<foreach, eval=FALSE, tidy=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1076,12 +1058,10 @@ Here are examples of some of the parallel apply-style commands.
 \end_layout
 
 \begin_layout Chunk
-
 <<parallelApply, eval=TRUE, tidy=FALSE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1132,12 +1112,10 @@ parallel
 \end_layout
 
 \begin_layout Chunk
-
 <<mcparallel, eval=TRUE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1281,12 +1259,10 @@ foreach
 \end_layout
 
 \begin_layout Chunk
-
 <<Rmpi-foreach-oneNode, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1454,12 +1430,10 @@ startMPIcluster()
 \end_layout
 
 \begin_layout Chunk
-
 <<Rmpi-foreach-multipleNodes, eval=FALSE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1502,12 +1476,10 @@ mpirun
 \end_layout
 
 \begin_layout Chunk
-
 <<sockets-multipleNodes, eval=FALSE, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1674,12 +1646,10 @@ foreach
 \end_layout
 
 \begin_layout Chunk
-
 <<Rmpi-usingMPIsyntax, cache=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1846,12 +1816,10 @@ Here's an example of distributing an embarrassingly parallel calculation
 \end_layout
 
 \begin_layout Chunk
-
 <<pbd-mpi, cache=TRUE, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1868,12 +1836,10 @@ apply()
 \end_layout
 
 \begin_layout Chunk
-
 <<pbd-apply, cache=TRUE, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -1890,12 +1856,10 @@ And here's how you would set up a distributed matrix and do linear algebra
 \end_layout
 
 \begin_layout Chunk
-
 <<pbd-linalg, cache=TRUE, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2133,13 +2097,9 @@ Now you can logon to the instance as the
 oski
 \emph default
  user (or just do 
-\begin_inset Quotes eld
-\end_inset
-
+\family typewriter
 su - oski
-\begin_inset Quotes erd
-\end_inset
-
+\family default
  if you are logged on as root) and do your work.
 \end_layout
 
@@ -2154,9 +2114,29 @@ By scripting
 \end_layout
 
 \begin_layout Standard
-Aaron Culich of Berkeley Research Computing recommends the following scripted
- approach.
- [To be filled in]
+For those of you in PH290, Aaron Culich of Berkeley Research Computing has
+ set up a 
+\begin_inset CommandInset href
+LatexCommand href
+name "scripted approach"
+target "https://github.com/ucberkeley/ph290-bce-2015-spring"
+
+\end_inset
+
+ to start and access an EC2 instance from the command line using a tool
+ called 
+\emph on
+vagrant
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+The python 
+\emph on
+boto
+\emph default
+ package is also handy for working with EC2.
 \end_layout
 
 \begin_layout Subsection
@@ -2208,12 +2188,10 @@ config
 \end_layout
 
 \begin_layout Chunk
-
 <<starcluster-start, eval=FALSE, engine='bash'>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2744,12 +2722,10 @@ parSapply()
 \end_layout
 
 \begin_layout Chunk
-
 <<RNG-apply, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2763,12 +2739,10 @@ nextRNGStream()
 \end_layout
 
 \begin_layout Chunk
-
 <<RNGstream, eval=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2794,12 +2768,10 @@ RNGkind("L'Ecuyer-CMRG")
 \end_layout
 
 \begin_layout Chunk
-
 <<RNG-mclapply, eval=FALSE, tidy=FALSE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2919,12 +2891,10 @@ seed
 \end_layout
 
 \begin_layout Chunk
-
 <<RNG-doMPI, eval=TRUE>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2985,12 +2955,10 @@ foreach
 \end_layout
 
 \begin_layout Chunk
-
 <<RNG-doRNG>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 
@@ -2999,12 +2967,10 @@ Alternatively, you can do:
 \end_layout
 
 \begin_layout Chunk
-
 <<RNG-doRNG2>>=
 \end_layout
 
 \begin_layout Chunk
-
 @
 \end_layout
 

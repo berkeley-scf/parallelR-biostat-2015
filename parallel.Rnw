@@ -50,7 +50,6 @@ read_chunk('pbd-apply.R')
 read_chunk('pbd-linalg.R')
 @
 
-%
 
 \section{How to follow and try out this material}
 
@@ -278,7 +277,6 @@ BLAS illustrates the speed of using a threaded BLAS:
 <<RlinAlg, cache=TRUE, eval=TRUE>>=
 @
 
-%
 
 \subsubsection{Setting up R with a fast BLAS}
 
@@ -296,14 +294,12 @@ use the system BLAS, so it will as a result use openBLAS.
 <<etc-alternatives, eval=FALSE, engine='bash'>>=
 @
 
-%
 To use a fast, threaded BLAS enabled on your own Mac, do the following
 as the administrative user:
 
 <<MacBLAS, eval=FALSE, engine='bash'>>=
 @
 
-%
 
 
 
@@ -385,7 +381,6 @@ later in this document.
 <<foreach, eval=FALSE, tidy=FALSE>>=
 @
 
-%
 The result of \emph{foreach} will generally be a list, unless \emph{foreach}
 is able to put it into a simpler R object. Note that \emph{foreach}
 also provides some additional functionality for collecting and managing
@@ -416,7 +411,6 @@ Here are examples of some of the parallel apply-style commands.
 <<parallelApply, eval=TRUE, tidy=FALSE, cache=TRUE>>=
 @
 
-%
 Note that some R packages can directly interact with the parallelization
 packages to work with multiple cores. E.g., the \emph{boot} package
 can make use of the \emph{multicore} package directly. 
@@ -434,7 +428,6 @@ than available cores.
 <<mcparallel, eval=TRUE, cache=TRUE>>=
 @
 
-%
 Note that \emph{mcparallel()} also allows the use of the \emph{mc.set.seed}
 argument as with \emph{mclapply()}.
 
@@ -485,7 +478,6 @@ Here's R code for using \emph{Rmpi} as the back-end to \emph{foreach}.
 <<Rmpi-foreach-oneNode, cache=TRUE>>=
 @
 
-%
 
 
 A caution concerning \emph{Rmpi/doMPI}: when you invoke \emph{startMPIcluster()},
@@ -529,7 +521,6 @@ and mpirun will start up as many processes as there are lines in the
 <<Rmpi-foreach-multipleNodes, eval=FALSE, cache=TRUE>>=
 @
 
-%
 CAUTION: Note that the above with \texttt{-np 4 }should in general
 work with \texttt{-np 1} as well (and does on the biostat cluster).
 However \texttt{-np 1} does not work in the Amazon cluster nor the
@@ -546,7 +537,6 @@ Here we can just start R as we normally would, without using \emph{mpirun}.
 <<sockets-multipleNodes, eval=FALSE, cache=TRUE>>=
 @
 
-%
 
 \subsection{MPI basics}
 
@@ -601,7 +591,6 @@ commands on them.
 <<Rmpi-usingMPIsyntax, cache=TRUE>>=
 @
 
-%
 CAUTION: for some reason the \emph{mpirun} syntax above is not distributing
 workers to the other nodes listed in the hosts file on the Amazon
 cluster and the SCF, but it should work on the Biostat cluster. This
@@ -665,7 +654,6 @@ the value of $\pi$).
 <<pbd-mpi, cache=TRUE, eval=FALSE>>=
 @
 
-%
 
 \paragraph{Parallel apply}
 
@@ -675,7 +663,6 @@ a matrix that is on one of the workers (i.e., the matrix is not distributed).
 <<pbd-apply, cache=TRUE, eval=FALSE>>=
 @
 
-%
 
 \paragraph{Distributed linear algebra}
 
@@ -687,7 +674,6 @@ parallel fashion rather than creating the full matrix on one worker.
 <<pbd-linalg, cache=TRUE, eval=FALSE>>=
 @
 
-%
 As a quick, completely non-definitive point of comparison, doing the
 crossproduct and Cholesky for the 8192x8192 matrix on 3 EC2 nodes
 (2 cores per node) with -np 6 took 39 seconds for each operation,
@@ -766,7 +752,7 @@ ssh -i ~/.ssh/your_private_key_file oski@<IP_address>
 \end{verbatim}
 
 Now you can logon to the instance as the \emph{oski} user (or just
-do ``su - oski'' if you are logged on as root) and do your work.
+do \texttt{su - oski} if you are logged on as root) and do your work.
 
 Once you are logged in to the VM, running parallel R jobs on a single
 node should be exactly the same as we've already seen on the BCE VM
@@ -775,8 +761,12 @@ running on your laptop.
 
 \paragraph{By scripting}
 
-Aaron Culich of Berkeley Research Computing recommends the following
-scripted approach. {[}To be filled in{]}
+For those of you in PH290, Aaron Culich of Berkeley Research Computing
+has set up a \href{https://github.com/ucberkeley/ph290-bce-2015-spring}{scripted approach}
+to start and access an EC2 instance from the command line using a
+tool called \emph{vagrant}.
+
+The python \emph{boto} package is also handy for working with EC2.
 
 
 \subsection{Starting a Cluster of EC2 Instances\label{sub:Starting-a-Cluster}}
@@ -796,7 +786,6 @@ directory. Then you can start an EC2 cluster and login as follows:
 <<starcluster-start, eval=FALSE, engine='bash'>>=
 @
 
-%
 When you start the cluster via \texttt{starcluster start}, you should
 see logging information that looks like this, followed by some instructions
 about how to restart, stop, and login to your cluster.
@@ -951,14 +940,12 @@ when using the \emph{parallel} package's parallel apply functionality
 <<RNG-apply, eval=FALSE>>=
 @
 
-%
 If you want to explicitly move from stream to stream, you can use
 \emph{nextRNGStream()}. For example:
 
 <<RNGstream, eval=FALSE>>=
 @
 
-%
 When using \emph{mclapply()}, you can use the \emph{mc.set.seed} argument
 as follows (note that \emph{mc.set.seed} is TRUE by default, so you
 should get different seeds for the different processes by default),
@@ -968,7 +955,6 @@ to get independent streams via the L'Ecuyer algorithm.
 <<RNG-mclapply, eval=FALSE, tidy=FALSE>>=
 @
 
-%
 The documentation for \emph{mcparallel()} gives more information about
 reproducibility based on \emph{mc.set.seed}.
 
@@ -1006,7 +992,6 @@ with \emph{seed} as an element of the list:
 <<RNG-doMPI, eval=TRUE>>=
 @
 
-%
 That single seed then initializes the RNG for the first task, and
 subsequent tasks get separate substreams, using the L'Ecuyer algorithm,
 based on \emph{nextRNGStream()}. Note that the \emph{doMPI} developers
@@ -1021,7 +1006,6 @@ Here's how you do it:
 <<RNG-doRNG>>=
 @
 
-%
 Alternatively, you can do:
 
 <<RNG-doRNG2>>=
