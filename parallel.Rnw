@@ -41,6 +41,8 @@ options(replace.assign=TRUE, width=55)
 
 <<read-chunk, echo=FALSE>>= 
 read_chunk('parallel.R')
+read_chunk('doMPIexample.R')
+read_chunk('RmpiExample.R')
 read_chunk('parallel.sh')
 read_chunk('starcluster.sh')
 read_chunk('pbd-mpi.R')
@@ -48,6 +50,7 @@ read_chunk('pbd-apply.R')
 read_chunk('pbd-linalg.R')
 @
 
+%
 
 \section{How to follow and try out this material}
 
@@ -55,16 +58,17 @@ Note that my examples here will be silly toy examples for the purpose
 of keeping things simple and focused on the parallelization approaches.
 The demo code embedded in this document is available in the various
 .R and .sh files in the Github repository, \href{https://github.com/berkeley-scf/parallelR-biostat-2015}{https://github.com/berkeley-scf/parallelR-biostat-2015}.
-This document was created using Sweave with Lyx (or Latex)
+This document was created using Sweave.
 
 I will do demos on an Ubuntu Linux virtual machine (VM), on the biostat
 cluster, and on Amazon's AWS. 
 
 We'll use the \href{http://bce.berkeley.edu}{BCE Virtual Machine}.
-You can run this on your laptop (see \href{http://bce.berkeley.edu/install.html}{the BCE installation instructions}),
+You can run this on your laptop (see the \href{http://bce.berkeley.edu/install.html}{BCE installation instructions}),
 and I encourage you to do so to follow along. Note: to allow for parallelization,
-before starting the BCE VM, go to Machine > Settings, select System
-and increase the number of processors.
+before starting the BCE VM, go to \texttt{Machine > Settings}, select
+\texttt{System} and increase the number of processors. You may also
+want to increase the amount of memory.
 
 We'll also use BCE as the basis for the virtual machines we start
 on Amazon's AWS. 
@@ -274,24 +278,32 @@ BLAS illustrates the speed of using a threaded BLAS:
 <<RlinAlg, cache=TRUE, eval=TRUE>>=
 @
 
-The R installation manual gives information on how to link R to a
-fast BLAS. On Ubuntu Linux, if you install openBLAS as follows, the
-\emph{/etc/alternatives} system will set \emph{/usr/lib/libblas.so}
-to point to openBLAS. By default on Ubuntu, R will use the system
-BLAS, so it will as a result use openBLAS. 
+%
+
+\subsubsection{Setting up R with a fast BLAS}
+
+R on the Biostat cluster is linked to openBLAS. So you should be able
+to use OMP\_NUM\_THREADS to control the number of threads used for
+linear algebra on the Biostat cluster. 
+
+In general, the \href{http://cran.r-project.org/manuals.html}{R installation manual}
+gives information on how to link R to a fast BLAS. On Ubuntu Linux,
+if you install openBLAS as follows, the \emph{/etc/alternatives} system
+will set \emph{/usr/lib/libblas.so} to point to openBLAS. This is
+what is done in the BCE virtual machine. By default on Ubuntu, R will
+use the system BLAS, so it will as a result use openBLAS. 
 
 <<etc-alternatives, eval=FALSE, engine='bash'>>=
 @
 
+%
 To use a fast, threaded BLAS enabled on your own Mac, do the following
 as the administrative user:
 
 <<MacBLAS, eval=FALSE, engine='bash'>>=
 @
 
-You should be able to use OMP\_NUM\_THREADS to control the number
-of threads used for linear algebra on the Biostat cluster. 
-
+%
 
 
 
@@ -364,14 +376,16 @@ parallel ``back-ends''. It can use \emph{Rmpi} to access cores in
 a distributed memory setting as discussed in Section \ref{sec:Distributed-memory}
 or the \emph{parallel} or \emph{multicore} packages to use shared
 memory cores. When using \emph{parallel} or \emph{multicore} as the
-back-end, you should see multiple processes (as many as you registered;
-ideally each at 100\%) when you look at \emph{top}. The multiple processes
+back-end (these are equivalent to each other from the user perspective),
+you should see multiple processes (as many as you registered; ideally
+each at 100\%) when you look at \emph{top}. The multiple processes
 are created by forking or using sockets; this is discussed a bit more
 later in this document.
 
 <<foreach, eval=FALSE, tidy=FALSE>>=
 @
 
+%
 The result of \emph{foreach} will generally be a list, unless \emph{foreach}
 is able to put it into a simpler R object. Note that \emph{foreach}
 also provides some additional functionality for collecting and managing
@@ -402,6 +416,7 @@ Here are examples of some of the parallel apply-style commands.
 <<parallelApply, eval=TRUE, tidy=FALSE, cache=TRUE>>=
 @
 
+%
 Note that some R packages can directly interact with the parallelization
 packages to work with multiple cores. E.g., the \emph{boot} package
 can make use of the \emph{multicore} package directly. 
@@ -419,6 +434,7 @@ than available cores.
 <<mcparallel, eval=TRUE, cache=TRUE>>=
 @
 
+%
 Note that \emph{mcparallel()} also allows the use of the \emph{mc.set.seed}
 argument as with \emph{mclapply()}.
 
@@ -437,7 +453,7 @@ on a given core):
 \emph{job.sh} would have the various lines starting with \#\$ as in
 the biostat cluster documentation and your R command would look like:
 
-\texttt{R CMD BATCH file.R file.out}
+\texttt{R CMD BATCH -{}-no-save file.R file.out}
 
 You can make use of the UNIX environment variable NSLOTS in your code
 to programmatically control the number of the number of cores your
@@ -455,7 +471,7 @@ this variable in R do:
 \subsection{Use of MPI as a black box for embarrassingly parallel computation}
 
 
-\subsubsection{foreach in R on a single node}
+\subsubsection{foreach with MPI in R on a single node}
 
 One reason to use Rmpi on a single node is that in some contexts the
 threaded BLAS (particularly openBLAS) conflicts with \emph{multicore}/\emph{parallel}'s
@@ -469,6 +485,7 @@ Here's R code for using \emph{Rmpi} as the back-end to \emph{foreach}.
 <<Rmpi-foreach-oneNode, cache=TRUE>>=
 @
 
+%
 
 
 A caution concerning \emph{Rmpi/doMPI}: when you invoke \emph{startMPIcluster()},
@@ -483,20 +500,26 @@ and then issuing commands to the slaves.
 
 \subsubsection{foreach in R on multiple nodes}
 
-{[}Note that at this point in the demo, we'll switch to use of a BCE-based
-EC2 virtual cluster, as we need access to multiple nodes.{]}
+\emph{{[}Note that at this point in the demo, we'll switch to use
+of a BCE-based EC2 virtual cluster, as we need access to multiple
+nodes. Note to self - just do starcluster sshmaster -u oski mycluster
+from laptop BCE.{]}}
 
 For this, we need to start R through the \emph{mpirun} command so
 that inter-node communication is handled by MPI. The \texttt{-machinefile}
-tells MPI what machines (nodes) to use for the computation. When running
-on the Biostat cluster you don't need \texttt{-machinefile .hosts}.
+argument tells MPI what machines (nodes) to use for the computation. 
 
-\texttt{mpirun -machinefile .hosts -np 4 R CMD BATCH -{}-no-save file.R
-file.out}
+\texttt{mpirun -machinefile .hosts -np 4 R CMD BATCH -{}-no-save doMPIexample.R
+doMPIexample.Rout}
 
-\texttt{mpirun -machinefile .hosts -np 4 R -{}-no-save}
+\texttt{mpirun -machinefile .hosts -np 4 R -{}-no-save \# for interactive
+use}
 
-Here's R code for using \emph{Rmpi} as the back-end to \emph{foreach}.
+When running on the Biostat cluster you can simply do:
+
+\texttt{mpirun -np 1 R CMD BATCH -{}-no-save doMPIexample.R doMPIexample.Rout}
+
+Here's the R code for using \emph{Rmpi} as the back-end to \emph{foreach}.
 If you call \emph{startMPIcluster()} with no arguments, it will start
 up one fewer worker processes than the value indicated by the np flag,
 so your R code will be more portable. Also you can leave off the -np
@@ -506,20 +529,24 @@ and mpirun will start up as many processes as there are lines in the
 <<Rmpi-foreach-multipleNodes, eval=FALSE, cache=TRUE>>=
 @
 
-Note that the above should work with -np 1 as well (and does on the
-biostat cluster). However -np 1 does not work in the Amazon cluster
-nor the SCF (though it has in the past). I'm in the process of investigating
+%
+CAUTION: Note that the above with \texttt{-np 4 }should in general
+work with \texttt{-np 1} as well (and does on the biostat cluster).
+However \texttt{-np 1} does not work in the Amazon cluster nor the
+SCF (though it has in the past). I'm in the process of investigating
 this. 
 
 
 \subsubsection{Sockets in R example}
 
 One can also set up a cluster via sockets. You just need to specify
-a character vector with the machine names as the input to \emph{makeCluster()}. 
+a character vector with the machine names as the input to \emph{makeCluster()}.
+Here we can just start R as we normally would, without using \emph{mpirun}.
 
 <<sockets-multipleNodes, eval=FALSE, cache=TRUE>>=
 @
 
+%
 
 \subsection{MPI basics}
 
@@ -553,47 +580,37 @@ can hang, error messages from the workers may not be seen or readily
 accessible and it can be difficult to assess the state of the worker
 processes. 
 
-First let's get a feel for MPI in the simple context of a single node.
-Of course it's a bit silly to do this in reality on a single node
-on which one can take advantage of shared memory. There's not much
-reason to use MPI on a single node as there's a cost to the message
-passing relative to shared memory, but it is useful to be able to
-test the code on a single machine without having to worry about networking
-issues across nodes.
-
 
 \subsubsection{Using Rmpi to write code for distributed computation}
 
-R users can use \emph{Rmpi} to interface with MPI. To use \emph{Rmpi},
-you can simply start R as you normally do by invoking a command-line
-R session or using R CMD BATCH. To use Rmpi across multiple nodes
-you'll need to invoke R with mpirun as in the example of foreach with
-doMPI on multiple nodes above.
-
-Here's some example code that uses actual \emph{Rmpi} syntax (as opposed
-to \emph{foreach} with Rmpi as the back-end). This code runs in a
-master-slave paradigm where the master starts the slaves and invokes
-commands on them. It may be possible to run \emph{Rmpi} in a context
-where each process runs the same code based on invoking with Rmpi,
-but I haven't investigated this further.
+R users can use \emph{Rmpi} to interface with MPI. 
 
 To start your R job do the following. Here one requests just a single
 process, as R will manage the task of spawning slaves.
 
-\texttt{mpirun -machinefile .hosts -np 1 R CMD BATCH -{}-no-save file.R
-file.Rout}
+\texttt{mpirun -machinefile .hosts -np 1 R CMD BATCH -{}-no-save RmpiExample.R
+RmpiExample.Rout}
 
 
+
+Here's some example code that uses actual \emph{Rmpi} syntax (as opposed
+to \emph{foreach} with Rmpi as the back-end). This code runs in a
+master-slave paradigm where the master starts the slaves and invokes
+commands on them. 
 
 <<Rmpi-usingMPIsyntax, cache=TRUE>>=
 @
 
-CAUTION: for some reason this syntax is not distributing workers to
-the other nodes listed in the hosts file on the Amazon cluster and
-the SCF, but it should work on the Biostat cluster. This has worked
-in the past for me, so I'm not sure what is going on, but it may be
-a difference in the MPI version or something in the latest Ubuntu
-(Ubuntu 14 vs. Ubuntu 12). 
+%
+CAUTION: for some reason the \emph{mpirun} syntax above is not distributing
+workers to the other nodes listed in the hosts file on the Amazon
+cluster and the SCF, but it should work on the Biostat cluster. This
+has worked in the past for me, so I'm not sure what is going on, but
+it may be a difference in the MPI version or something in the latest
+Ubuntu (Ubuntu 14 vs. Ubuntu 12). 
+
+You can use Rmpi on a single node, for example for debugging or prototyping.
+In this case you can just start R without using mpirun.
 
 Note that if you do this in interactive mode, some of the usual functionality
 of command line R (tab completion, scrolling for history) is not enabled
@@ -614,19 +631,23 @@ to see if the workers are already set up.
 
 There is a relatively new effort to enhance R's capability for distributed
 memory processing called \emph{pbdR}. \emph{pbdR} is designed for
-SPMD processing in batch mode. \emph{pbdR} provides the following
-capabilities:
+SPMD processing in batch mode, which means that you start up multiple
+processes in a non-interactive fashion using mpirun. The same code
+runs in each R process so you need to have the code behavior depend
+on the process ID, as we saw with \emph{Rmpi} above.
+
+\emph{pbdR} provides the following capabilities:
 \begin{itemize}
-\item an alternative to Rmpi for interfacing with MPI
-\item the ability to do some parallel apply-style computations
-\item the ability to do distributed linear algebra by interfacing to ScaLapack
+\item an alternative to \emph{Rmpi} for interfacing with MPI,
+\item the ability to do some parallel apply-style computations, and
+\item the ability to do distributed linear algebra by interfacing to \emph{ScaLapack.}
 \end{itemize}
 Personally, I think the last of the three is the most exciting as
-its a functionality not readily available in R or even more generally
+it's a functionality not readily available in R or even more generally
 in other readily-accessible software.
 
 \emph{pbdR} is installed on the nodes in our example EC2 cluster,
-as detailed in Section X.
+as detailed in Section \ref{sub:Starting-a-Cluster}.
 
 Let's see some basic examples of using pbdR.
 
@@ -644,6 +665,7 @@ the value of $\pi$).
 <<pbd-mpi, cache=TRUE, eval=FALSE>>=
 @
 
+%
 
 \paragraph{Parallel apply}
 
@@ -653,6 +675,7 @@ a matrix that is on one of the workers (i.e., the matrix is not distributed).
 <<pbd-apply, cache=TRUE, eval=FALSE>>=
 @
 
+%
 
 \paragraph{Distributed linear algebra}
 
@@ -664,25 +687,37 @@ parallel fashion rather than creating the full matrix on one worker.
 <<pbd-linalg, cache=TRUE, eval=FALSE>>=
 @
 
+%
+As a quick, completely non-definitive point of comparison, doing the
+crossproduct and Cholesky for the 8192x8192 matrix on 3 EC2 nodes
+(2 cores per node) with -np 6 took 39 seconds for each operation,
+while doing with two threads on the master node took 64 seconds (crossproduct)
+and 23 seconds (Cholesky).
+
 
 \subsection{Running on the Biostat cluster}
 
-Here's how you would run distributed R jobs based on mpirun on the
-Biostat cluster 
+Here's how you would run distributed R jobs based on \emph{mpirun}
+on the Biostat cluster 
 
 \texttt{qsub -pe orte 12 job.sh}
 
-job.sh would have the various lines starting with \#\$ as in the biostat
-cluster documentation.
+\emph{job.sh} would have the various lines starting with \#\$ as in
+the biostat cluster documentation.
 
-For Rmpi/doMPI your R command would look like this, where R will start
-the worker processes (hence the -np 1)
+For Rmpi/doMPI your R command inside \emph{job.sh} would look like
+this, where R will start the worker processes (hence the \texttt{-np
+1})
 
 \texttt{mpirun -np 1 R CMD BATCH file.R file.out}
 
-or for pbdR where mpirun starts the workers in SPMD fashion:
+or for \emph{pbdR} where \emph{mpirun} starts the workers in SPMD
+fashion:
 
 \texttt{mpirun -np 12 Rscript file.R > file.out}
+
+In general on the Biostat cluster, you do not need to pass anything
+via \texttt{-machinefile} as the queueing software takes care of this.
 
 
 \section{Using R on Cloud VMs and Cloud-based Clusters}
@@ -690,11 +725,18 @@ or for pbdR where mpirun starts the workers in SPMD fashion:
 For Amazon-based machines, we'll use the BCE image as our starting
 point and add software to it.
 
-\textbf{WARNING: do not share your Amazon authentication info (AWS\_ACCESS\_KEY\_ID
-or AWS\_SECRET\_ACCESS\_KEY) in any public setting, such as a public
-Github account.} A user in my class did this and we ended up with
-thousands of dollars in charges from hackers starting up instances
-(probably to mine Bitcoin).
+Amazon's service that provides cloud-based virtual machines is called
+EC2. To use EC2, you'll need an Amazon account. This might be an account
+you pay for with your own credit card, or an account that Biostat
+pays for through a grant. 
+
+Once you get an account, you'll receive authentication information
+in the form of two long strings of letters/numbers, called your access
+key ID and secret access key.\textbf{ WARNING: do not share your Amazon
+authentication info (AWS\_ACCESS\_KEY\_ID or AWS\_SECRET\_ACCESS\_KEY)
+in any public setting, such as a public Github account.} A user in
+my class did this and we ended up with thousands of dollars in charges
+from hackers starting up instances (probably to mine Bitcoin).
 
 
 \subsection{Starting an Amazon EC2 Instance}
@@ -706,19 +748,25 @@ To start up an EC2 virtual machine based on BCE, follow the instructions
 at \href{http://bce.berkeley.edu/install.html}{bce.berkeley.edu/install.html}.
 
 To logon, you'll need to make use of SSH keys. Here's how to get things
-going with BCE such that you can logon as the oski user. You obtain
-the <IP\_address> by clicking on the ``Connect'' button on the EC2
-console.
+going with BCE such that you can logon as the \emph{oski} user. You
+obtain the <IP\_address> by clicking on the ``Connect'' button on
+the EC2 console.
 
 \begin{verbatim}
-ssh -i ~/.ssh/your_private_key_file ubuntu@<IP_address> sudo bash modify-for-aws.sh
-ssh -i ~/.ssh/your_private_key_file ubuntu@<IP_address> sudo bash add-parallel-tools.sh
+# get the modify-for-aws.sh and add-parallel-tools.sh
+# scripts from the BCE webpage
+# run on the VM to do some setup
+ssh -i ~/.ssh/your_private_key_file ubuntu@<IP_address> \
+   sudo bash modify-for-aws.sh  
+# now install software for parallel R functionality
+ssh -i ~/.ssh/your_private_key_file ubuntu@<IP_address> \
+   sudo bash add-parallel-tools.sh
 # Now you can ssh in directly as the oski user.
 ssh -i ~/.ssh/your_private_key_file oski@<IP_address> 
 \end{verbatim}
 
-Now you can logon to the instance as the oski user (or just do ``su
-- oski'' if you are logged on as root) and do your work.
+Now you can logon to the instance as the \emph{oski} user (or just
+do ``su - oski'' if you are logged on as root) and do your work.
 
 Once you are logged in to the VM, running parallel R jobs on a single
 node should be exactly the same as we've already seen on the BCE VM
@@ -728,10 +776,10 @@ running on your laptop.
 \paragraph{By scripting}
 
 Aaron Culich of Berkeley Research Computing recommends the following
-scripted approach.
+scripted approach. {[}To be filled in{]}
 
 
-\subsection{Starting a Cluster of EC2 Instances}
+\subsection{Starting a Cluster of EC2 Instances\label{sub:Starting-a-Cluster}}
 
 We'll use a tool called \href{http://star.mit.edu/cluster/index.html}{Starcluster}
 to start EC2 clusters. This manages setting up the networking between
@@ -741,13 +789,14 @@ The file \emph{starcluster.config} contains some basic settings you
 can use to start up an EC2 cluster based on BCE. In particular it
 has the AMI IDs for the BCE EC2 images. You'll need to put your own
 AWS authentication information in the file (or set these as environment
-variables in your shell session). Rename the file \emph{config} and
-put it in a directory called \emph{.starcluster} in your home directory.
-Then you can start an EC2 cluster and login as follows:
+variables in your shell session). Rename the file as \emph{config}
+and put it in a directory called \emph{.starcluster} in your home
+directory. Then you can start an EC2 cluster and login as follows:
 
 <<starcluster-start, eval=FALSE, engine='bash'>>=
 @
 
+%
 When you start the cluster via \texttt{starcluster start}, you should
 see logging information that looks like this, followed by some instructions
 about how to restart, stop, and login to your cluster.
@@ -799,7 +848,7 @@ the EC2 cluster with some parallel R (and Python) tools, as well as
 MPI. In particular note that I've created a \emph{.hosts} file for
 use with \emph{mpirun}. The host file just contains lines with \emph{master},
 \emph{node001}, \emph{node002}, ..., which are the internal names
-of the nodes in the cluster that Starcluster has set.
+of the nodes (as named by Starcluster) in the cluster.
 
 
 \section{Efficiency and Profiling}
@@ -825,22 +874,22 @@ rather than looking up/subsetting by name or boolean values.
 Again my class notes (see above link) provide more details on the
 topics below.
 
-The system.time() function allows you to time R code. The rbenchmark
-package provides a nice wrapper function, benchmark(), that eases
-timing of code and comparison of timing of different code chunks. 
+The \emph{system.time()} function allows you to time R code. The rbenchmark
+package provides a nice wrapper function, \emph{benchmark()}, that
+eases timing of code and comparison of timing of different code chunks. 
 
-The Rprof() function allows you to see how much time is spent in different
-parts of your code, helping to identify bottlenecks. Rprof() works
-as follows. At set time intervals, it queries the R process to see
-what function is being evaluated and writes this info to disk. Then
-when the code is finished you can call summaryRprof() to collect those
-statistics. Note that if your code runs very quickly, you may not
-get enough queries accumulated to have useful information. See the
-'interval' argument to Rprof. In this case you may be able to write
-a loop that repeatedly evaluates your code. 
+The \emph{Rprof()} function allows you to see how much time is spent
+in different parts of your code, helping to identify bottlenecks.
+\emph{Rprof()} works as follows. At set time intervals, it queries
+the R process to see what function is being evaluated and writes this
+info to disk. Then when the code is finished you can call \emph{summaryRprof()}
+to collect those statistics. Note that if your code runs very quickly,
+you may not get enough queries accumulated to have useful information.
+See the \emph{interval} argument to \emph{Rprof()}. In this case you
+may be able to write a loop that repeatedly evaluates your code. 
 
 I haven't used it, but Hadley Wickham's \href{https://github.com/hadley/lineprof}{lineprof package}
-provides a nice interface that allows you to see timing (as with Rprof())
+provides a nice interface that allows you to see timing (as with \emph{Rprof()})
 but also memory use by lines of your code. Some details are in \href{http://adv-r.had.co.nz/memory.html\#memory-profiling}{his book}.
 
 
@@ -860,19 +909,19 @@ a sequence of values between 0 and 1.
 The worst thing that could happen is that one sets things up in such
 a way that every process is using the same sequence of random numbers.
 This could happen if you mistakenly set the same seed in each process,
-e.g., using \emph{set.seed(mySeed)} in R on every process.
+e.g., using \texttt{set.seed(mySeed)} in R on every process.
 
 The naive approach is to use a different seed for each process. E.g.,
 if your processes are numbered $id=1,\ldots,p$, with \emph{id} unique
-to a process, using \emph{set.seed(id)} on each process. This is likely
-not to cause problems, but raises the danger that two (or more sequences)
-might overlap. For an algorithm with dependence on the full sequence,
-such as an MCMC, this probably won't cause big problems (though you
-likely wouldn't know if it did), but for something like simple simulation
-studies, some of your 'independent' samples could be exact replicates
-of a sample on another process. Given the period length of the default
-generators in R, Matlab and Python, this is actually quite unlikely,
-but it is a bit sloppy.
+to a process, using \texttt{set.seed(id)} on each process. This is
+likely not to cause problems, but raises the danger that two (or more
+sequences) might overlap. For an algorithm with dependence on the
+full sequence, such as an MCMC, this probably won't cause big problems
+(though you likely wouldn't know if it did), but for something like
+simple simulation studies, some of your 'independent' samples could
+be exact replicates of a sample on another process. Given the period
+length of the default generators in R, Matlab and Python, this is
+actually quite unlikely, but it is a bit sloppy.
 
 One approach to avoid the problem is to do all your RNG on one process
 and distribute the random deviates, but this can be infeasible with
@@ -902,12 +951,14 @@ when using the \emph{parallel} package's parallel apply functionality
 <<RNG-apply, eval=FALSE>>=
 @
 
+%
 If you want to explicitly move from stream to stream, you can use
 \emph{nextRNGStream()}. For example:
 
 <<RNGstream, eval=FALSE>>=
 @
 
+%
 When using \emph{mclapply()}, you can use the \emph{mc.set.seed} argument
 as follows (note that \emph{mc.set.seed} is TRUE by default, so you
 should get different seeds for the different processes by default),
@@ -917,6 +968,7 @@ to get independent streams via the L'Ecuyer algorithm.
 <<RNG-mclapply, eval=FALSE, tidy=FALSE>>=
 @
 
+%
 The documentation for \emph{mcparallel()} gives more information about
 reproducibility based on \emph{mc.set.seed}.
 
@@ -954,6 +1006,7 @@ with \emph{seed} as an element of the list:
 <<RNG-doMPI, eval=TRUE>>=
 @
 
+%
 That single seed then initializes the RNG for the first task, and
 subsequent tasks get separate substreams, using the L'Ecuyer algorithm,
 based on \emph{nextRNGStream()}. Note that the \emph{doMPI} developers
@@ -968,6 +1021,7 @@ Here's how you do it:
 <<RNG-doRNG>>=
 @
 
+%
 Alternatively, you can do:
 
 <<RNG-doRNG2>>=

@@ -4,15 +4,20 @@
 require(RhpcBLASctl)
 # I use RhpcBLASctl to control threading for purpose of demo
 # but one can also set OMP_NUM_THREADS in the shell before invoking R
-x <- matrix(rnorm(5000^2), 5000)
 
 blas_set_num_threads(4)
+
+set.seed(0)
+x <- matrix(rnorm(5000^2), 5000)
 system.time({
 x <- crossprod(x)
 U <- chol(x)
 })
 
 blas_set_num_threads(1)
+
+set.seed(0)
+x <- matrix(rnorm(5000^2), 5000)
 system.time({
 x <- crossprod(x)
 U <- chol(x)

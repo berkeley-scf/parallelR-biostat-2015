@@ -205,17 +205,25 @@ target "bce.berkeley.edu"
 \end_inset
 
 .
- You can run this on your laptop (see 
+ You can run this on your laptop (see the 
 \begin_inset CommandInset href
 LatexCommand href
-name "the BCE installation instructions"
+name "BCE installation instructions"
 target "bce.berkeley.edu/install.html"
 
 \end_inset
 
 ), and I encourage you to do so to follow along.
- Note: to allow for parallelization, before starting the BCE VM, go to Machine
- > Settings, select System and increase the number of processors.
+ Note: to allow for parallelization, before starting the BCE VM, go to 
+\family typewriter
+Machine > Settings
+\family default
+, select 
+\family typewriter
+System
+\family default
+ and increase the number of processors.
+ You may also want to increase the amount of memory.
 \end_layout
 
 \begin_layout Standard
@@ -684,8 +692,27 @@ Here's some code that when run in an R executable linked to a threaded BLAS
 @
 \end_layout
 
+\begin_layout Subsubsection
+Setting up R with a fast BLAS
+\end_layout
+
 \begin_layout Standard
-The R installation manual gives information on how to link R to a fast BLAS.
+R on the Biostat cluster is linked to openBLAS.
+ So you should be able to use OMP_NUM_THREADS to control the number of threads
+ used for linear algebra on the Biostat cluster.
+ 
+\end_layout
+
+\begin_layout Standard
+In general, the 
+\begin_inset CommandInset href
+LatexCommand href
+name "R installation manual"
+target "http://cran.r-project.org/manuals.html"
+
+\end_inset
+
+ gives information on how to link R to a fast BLAS.
  On Ubuntu Linux, if you install openBLAS as follows, the 
 \emph on
 /etc/alternatives
@@ -695,6 +722,7 @@ The R installation manual gives information on how to link R to a fast BLAS.
 /usr/lib/libblas.so
 \emph default
  to point to openBLAS.
+ This is what is done in the BCE virtual machine.
  By default on Ubuntu, R will use the system BLAS, so it will as a result
  use openBLAS.
  
@@ -723,12 +751,6 @@ To use a fast, threaded BLAS enabled on your own Mac, do the following as
 \begin_layout Chunk
 
 @
-\end_layout
-
-\begin_layout Standard
-You should be able to use OMP_NUM_THREADS to control the number of threads
- used for linear algebra on the Biostat cluster.
- 
 \end_layout
 
 \begin_layout Standard
@@ -937,8 +959,9 @@ parallel
 \emph on
 multicore
 \emph default
- as the back-end, you should see multiple processes (as many as you registered;
- ideally each at 100%) when you look at 
+ as the back-end (these are equivalent to each other from the user perspective),
+ you should see multiple processes (as many as you registered; ideally each
+ at 100%) when you look at 
 \emph on
 top
 \emph default
@@ -1166,7 +1189,7 @@ job.sh
 \begin_layout Standard
 
 \family typewriter
-R CMD BATCH file.R file.out
+R CMD BATCH --no-save file.R file.out
 \end_layout
 
 \begin_layout Standard
@@ -1211,7 +1234,7 @@ Use of MPI as a black box for embarrassingly parallel computation
 \end_layout
 
 \begin_layout Subsubsection
-foreach in R on a single node
+foreach with MPI in R on a single node
 \end_layout
 
 \begin_layout Standard
@@ -1365,6 +1388,8 @@ foreach in R on multiple nodes
 \end_layout
 
 \begin_layout Standard
+
+\emph on
 [Note that at this point in the demo, we'll switch to use of a BCE-based
  EC2 virtual cluster, as we need access to multiple nodes.
  Note to self - just do starcluster sshmaster -u oski mycluster from laptop
@@ -1382,11 +1407,7 @@ mpirun
 -machinefile
 \family default
  argument tells MPI what machines (nodes) to use for the computation.
- When running on the Biostat cluster you don't need 
-\family typewriter
--machinefile .hosts
-\family default
-.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -1399,11 +1420,21 @@ Rout
 \begin_layout Standard
 
 \family typewriter
-mpirun -machinefile .hosts -np 4 R --no-save
+mpirun -machinefile .hosts -np 4 R --no-save # for interactive use
 \end_layout
 
 \begin_layout Standard
-Here's R code for using 
+When running on the Biostat cluster you can simply do:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+mpirun -np 1 R CMD BATCH --no-save doMPIexample.R doMPIexample.Rout
+\end_layout
+
+\begin_layout Standard
+Here's the R code for using 
 \emph on
 Rmpi
 \emph default
@@ -1433,7 +1464,11 @@ startMPIcluster()
 \end_layout
 
 \begin_layout Standard
-CAUTION: Note that the above should in general work with 
+CAUTION: Note that the above with 
+\family typewriter
+-np 4 
+\family default
+should in general work with 
 \family typewriter
 -np 1
 \family default
@@ -1583,16 +1618,6 @@ Rmpi
  
 \end_layout
 
-\begin_layout Standard
-First let's get a feel for MPI in the simple context of a single node.
- Of course it's a bit silly to do this in reality on a single node on which
- one can take advantage of shared memory.
- There's not much reason to use MPI on a single node as there's a cost to
- the message passing relative to shared memory, but it is useful to be able
- to test the code on a single machine without having to worry about networking
- issues across nodes.
-\end_layout
-
 \begin_layout Subsubsection
 Using Rmpi to write code for distributed computation
 \end_layout
@@ -1603,34 +1628,7 @@ R users can use
 Rmpi
 \emph default
  to interface with MPI.
- To use 
-\emph on
-Rmpi
-\emph default
-, you can simply start R as you normally do by invoking a command-line R
- session or using R CMD BATCH.
- To use Rmpi across multiple nodes you'll need to invoke R with mpirun as
- in the example of foreach with doMPI on multiple nodes above.
-\end_layout
-
-\begin_layout Standard
-Here's some example code that uses actual 
-\emph on
-Rmpi
-\emph default
- syntax (as opposed to 
-\emph on
-foreach
-\emph default
- with Rmpi as the back-end).
- This code runs in a master-slave paradigm where the master starts the slaves
- and invokes commands on them.
- It may be possible to run 
-\emph on
-Rmpi
-\emph default
- in a context where each process runs the same code based on invoking with
- Rmpi, but I haven't investigated this further.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -1660,6 +1658,21 @@ status open
 
 \end_layout
 
+\begin_layout Standard
+Here's some example code that uses actual 
+\emph on
+Rmpi
+\emph default
+ syntax (as opposed to 
+\emph on
+foreach
+\emph default
+ with Rmpi as the back-end).
+ This code runs in a master-slave paradigm where the master starts the slaves
+ and invokes commands on them.
+ 
+\end_layout
+
 \begin_layout Chunk
 
 <<Rmpi-usingMPIsyntax, cache=TRUE>>=
@@ -1671,14 +1684,23 @@ status open
 \end_layout
 
 \begin_layout Standard
-CAUTION: for some reason this syntax is not distributing workers to the
- other nodes listed in the hosts file on the Amazon cluster and the SCF,
- but it should work on the Biostat cluster.
+CAUTION: for some reason the 
+\emph on
+mpirun
+\emph default
+ syntax above is not distributing workers to the other nodes listed in the
+ hosts file on the Amazon cluster and the SCF, but it should work on the
+ Biostat cluster.
  This has worked in the past for me, so I'm not sure what is going on, but
  it may be a difference in the MPI version or something in the latest Ubuntu
  (Ubuntu 14 vs.
  Ubuntu 12).
  
+\end_layout
+
+\begin_layout Standard
+You can use Rmpi on a single node, for example for debugging or prototyping.
+ In this case you can just start R without using mpirun.
 \end_layout
 
 \begin_layout Standard
@@ -1737,8 +1759,18 @@ pbdR
 \emph on
 pbdR
 \emph default
- is designed for SPMD processing in batch mode.
- 
+ is designed for SPMD processing in batch mode, which means that you start
+ up multiple processes in a non-interactive fashion using mpirun.
+ The same code runs in each R process so you need to have the code behavior
+ depend on the process ID, as we saw with 
+\emph on
+Rmpi
+\emph default
+ above.
+\end_layout
+
+\begin_layout Standard
+
 \emph on
 pbdR
 \emph default
@@ -1746,19 +1778,25 @@ pbdR
 \end_layout
 
 \begin_layout Itemize
-an alternative to Rmpi for interfacing with MPI
+an alternative to 
+\emph on
+Rmpi
+\emph default
+ for interfacing with MPI,
 \end_layout
 
 \begin_layout Itemize
-the ability to do some parallel apply-style computations
+the ability to do some parallel apply-style computations, and
 \end_layout
 
 \begin_layout Itemize
-the ability to do distributed linear algebra by interfacing to ScaLapack
+the ability to do distributed linear algebra by interfacing to 
+\emph on
+ScaLapack.
 \end_layout
 
 \begin_layout Standard
-Personally, I think the last of the three is the most exciting as its a
+Personally, I think the last of the three is the most exciting as it's a
  functionality not readily available in R or even more generally in other
  readily-accessible software.
 \end_layout
@@ -1861,13 +1899,23 @@ And here's how you would set up a distributed matrix and do linear algebra
 @
 \end_layout
 
+\begin_layout Standard
+As a quick, completely non-definitive point of comparison, doing the crossproduc
+t and Cholesky for the 8192x8192 matrix on 3 EC2 nodes (2 cores per node)
+ with -np 6 took 39 seconds for each operation, while doing with two threads
+ on the master node took 64 seconds (crossproduct) and 23 seconds (Cholesky).
+\end_layout
+
 \begin_layout Subsection
 Running on the Biostat cluster
 \end_layout
 
 \begin_layout Standard
-Here's how you would run distributed R jobs based on mpirun on the Biostat
- cluster 
+Here's how you would run distributed R jobs based on 
+\emph on
+mpirun
+\emph default
+ on the Biostat cluster 
 \end_layout
 
 \begin_layout Standard
@@ -1877,13 +1925,25 @@ qsub -pe orte 12 job.sh
 \end_layout
 
 \begin_layout Standard
-job.sh would have the various lines starting with #$ as in the biostat cluster
+
+\emph on
+job.sh
+\emph default
+ would have the various lines starting with #$ as in the biostat cluster
  documentation.
 \end_layout
 
 \begin_layout Standard
-For Rmpi/doMPI your R command would look like this, where R will start the
- worker processes (hence the -np 1)
+For Rmpi/doMPI your R command inside 
+\emph on
+job.sh
+\emph default
+ would look like this, where R will start the worker processes (hence the
+ 
+\family typewriter
+-np 1
+\family default
+)
 \end_layout
 
 \begin_layout Standard
@@ -1893,13 +1953,30 @@ mpirun -np 1 R CMD BATCH file.R file.out
 \end_layout
 
 \begin_layout Standard
-or for pbdR where mpirun starts the workers in SPMD fashion:
+or for 
+\emph on
+pbdR
+\emph default
+ where 
+\emph on
+mpirun
+\emph default
+ starts the workers in SPMD fashion:
 \end_layout
 
 \begin_layout Standard
 
 \family typewriter
 mpirun -np 12 Rscript file.R > file.out
+\end_layout
+
+\begin_layout Standard
+In general on the Biostat cluster, you do not need to pass anything via
+ 
+\family typewriter
+-machinefile
+\family default
+ as the queueing software takes care of this.
 \end_layout
 
 \begin_layout Section
@@ -1912,9 +1989,20 @@ For Amazon-based machines, we'll use the BCE image as our starting point
 \end_layout
 
 \begin_layout Standard
+Amazon's service that provides cloud-based virtual machines is called EC2.
+ To use EC2, you'll need an Amazon account.
+ This might be an account you pay for with your own credit card, or an account
+ that Biostat pays for through a grant.
+ 
+\end_layout
+
+\begin_layout Standard
+Once you get an account, you'll receive authentication information in the
+ form of two long strings of letters/numbers, called your access key ID
+ and secret access key.
 
 \series bold
-WARNING: do not share your Amazon authentication info (AWS_ACCESS_KEY_ID
+ WARNING: do not share your Amazon authentication info (AWS_ACCESS_KEY_ID
  or AWS_SECRET_ACCESS_KEY) in any public setting, such as a public Github
  account.
 
@@ -1946,7 +2034,11 @@ target "bce.berkeley.edu/install.html"
 \begin_layout Standard
 To logon, you'll need to make use of SSH keys.
  Here's how to get things going with BCE such that you can logon as the
- oski user.
+ 
+\emph on
+oski
+\emph default
+ user.
  You obtain the <IP_address> by clicking on the 
 \begin_inset Quotes eld
 \end_inset
@@ -1971,14 +2063,46 @@ begin{verbatim}
 
 \begin_layout Plain Layout
 
-ssh -i ~/.ssh/your_private_key_file ubuntu@<IP_address> sudo bash modify-for-aws.s
-h
+# get the modify-for-aws.sh and add-parallel-tools.sh
 \end_layout
 
 \begin_layout Plain Layout
 
-ssh -i ~/.ssh/your_private_key_file ubuntu@<IP_address> sudo bash add-parallel-to
-ols.sh
+# scripts from the BCE webpage
+\end_layout
+
+\begin_layout Plain Layout
+
+# run on the VM to do some setup
+\end_layout
+
+\begin_layout Plain Layout
+
+ssh -i ~/.ssh/your_private_key_file ubuntu@<IP_address> 
+\backslash
+
+\end_layout
+
+\begin_layout Plain Layout
+
+   sudo bash modify-for-aws.sh  
+\end_layout
+
+\begin_layout Plain Layout
+
+# now install software for parallel R functionality
+\end_layout
+
+\begin_layout Plain Layout
+
+ssh -i ~/.ssh/your_private_key_file ubuntu@<IP_address> 
+\backslash
+
+\end_layout
+
+\begin_layout Plain Layout
+
+   sudo bash add-parallel-tools.sh
 \end_layout
 
 \begin_layout Plain Layout
@@ -2004,7 +2128,11 @@ end{verbatim}
 \end_layout
 
 \begin_layout Standard
-Now you can logon to the instance as the oski user (or just do 
+Now you can logon to the instance as the 
+\emph on
+oski
+\emph default
+ user (or just do 
 \begin_inset Quotes eld
 \end_inset
 
@@ -2028,6 +2156,7 @@ By scripting
 \begin_layout Standard
 Aaron Culich of Berkeley Research Computing recommends the following scripted
  approach.
+ [To be filled in]
 \end_layout
 
 \begin_layout Subsection
@@ -2066,7 +2195,7 @@ starcluster.config
  In particular it has the AMI IDs for the BCE EC2 images.
  You'll need to put your own AWS authentication information in the file
  (or set these as environment variables in your shell session).
- Rename the file 
+ Rename the file as 
 \emph on
 config
 \emph default
@@ -2408,23 +2537,49 @@ Again my class notes (see above link) provide more details on the topics
 \end_layout
 
 \begin_layout Standard
-The system.time() function allows you to time R code.
- The rbenchmark package provides a nice wrapper function, benchmark(), that
- eases timing of code and comparison of timing of different code chunks.
+The 
+\emph on
+system.time()
+\emph default
+ function allows you to time R code.
+ The rbenchmark package provides a nice wrapper function, 
+\emph on
+benchmark()
+\emph default
+, that eases timing of code and comparison of timing of different code chunks.
  
 \end_layout
 
 \begin_layout Standard
-The Rprof() function allows you to see how much time is spent in different
- parts of your code, helping to identify bottlenecks.
- Rprof() works as follows.
+The 
+\emph on
+Rprof()
+\emph default
+ function allows you to see how much time is spent in different parts of
+ your code, helping to identify bottlenecks.
+ 
+\emph on
+Rprof()
+\emph default
+ works as follows.
  At set time intervals, it queries the R process to see what function is
  being evaluated and writes this info to disk.
- Then when the code is finished you can call summaryRprof() to collect those
- statistics.
+ Then when the code is finished you can call 
+\emph on
+summaryRprof()
+\emph default
+ to collect those statistics.
  Note that if your code runs very quickly, you may not get enough queries
  accumulated to have useful information.
- See the 'interval' argument to Rprof.
+ See the 
+\emph on
+interval
+\emph default
+ argument to 
+\emph on
+Rprof()
+\emph default
+.
  In this case you may be able to write a loop that repeatedly evaluates
  your code.
  
@@ -2439,8 +2594,11 @@ target "https://github.com/hadley/lineprof"
 
 \end_inset
 
- provides a nice interface that allows you to see timing (as with Rprof())
- but also memory use by lines of your code.
+ provides a nice interface that allows you to see timing (as with 
+\emph on
+Rprof()
+\emph default
+) but also memory use by lines of your code.
  Some details are in 
 \begin_inset CommandInset href
 LatexCommand href
@@ -2483,9 +2641,9 @@ The worst thing that could happen is that one sets things up in such a way
  that every process is using the same sequence of random numbers.
  This could happen if you mistakenly set the same seed in each process,
  e.g., using 
-\emph on
+\family typewriter
 set.seed(mySeed)
-\emph default
+\family default
  in R on every process.
 \end_layout
 
@@ -2500,9 +2658,9 @@ The naive approach is to use a different seed for each process.
 id
 \emph default
  unique to a process, using 
-\emph on
+\family typewriter
 set.seed(id)
-\emph default
+\family default
  on each process.
  This is likely not to cause problems, but raises the danger that two (or
  more sequences) might overlap.

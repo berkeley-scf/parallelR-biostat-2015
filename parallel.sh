@@ -7,7 +7,8 @@ R_VERSION=3.1
 cd /Library/Frameworks/R.framework/Versions/${R_VERSION}/Resources/lib
 sudo cp libRblas.dylib libRblas.dylib.backup
 sudo ln -s /System/Library/Frameworks/Accelerate.framework/Versions/\
-Current/Frameworks/vecLib.framework/Versions/Current/libBLAS.dylib
+Current/Frameworks/vecLib.framework/Versions/Current/libBLAS.dylib \
+libRblas.dylib
 
 ## @knitr etc-alternatives
 
