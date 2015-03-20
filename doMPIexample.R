@@ -17,7 +17,7 @@ nIts <- 50
 results <- foreach(i = 1:nIts) %dopar% {
   out = mean(rnorm(1e7))
 }
-print(unlist(out))
+print(unlist(results))
 
 closeCluster(cl)
 
